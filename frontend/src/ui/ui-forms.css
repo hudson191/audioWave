@@ -1,0 +1,210 @@
+/* ==========================================================================
+   Eyris UI kit — formulários: Field, Input, Select, Textarea, Slider, UploadZone
+   ========================================================================== */
+
+/* --- Field ---------------------------------------------------------------- */
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ui-field__label {
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+}
+
+.ui-field__error {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+}
+
+/* --- Input / Select / Textarea -------------------------------------------- */
+.ui-input,
+.ui-select,
+.ui-textarea {
+  width: 100%;
+  height: 36px;
+  padding: 6px var(--space-3);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+}
+
+.ui-textarea {
+  height: auto;
+  min-height: 72px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.ui-input::placeholder,
+.ui-textarea::placeholder {
+  color: var(--color-text-soft);
+}
+
+.ui-input:focus-visible,
+.ui-select:focus-visible,
+.ui-textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+  border-color: var(--color-primary);
+}
+
+.ui-input:disabled,
+.ui-select:disabled,
+.ui-textarea:disabled {
+  background: var(--color-surface-muted);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ui-select-wrap {
+  position: relative;
+  display: block;
+}
+
+.ui-select {
+  appearance: none;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+.ui-select__chevron {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+/* --- Slider ---------------------------------------------------------------- */
+.ui-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+.ui-slider__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ui-slider__input {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  width: 100%;
+  height: 4px;
+  margin: 6px 0;
+  border-radius: 999px;
+  background-color: var(--color-track);
+  background-image: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-primary-hover)
+  );
+  background-size: var(--pct, 0%) 100%;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.ui-slider__input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+  cursor: pointer;
+}
+
+.ui-slider__input::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+  cursor: pointer;
+}
+
+.ui-slider__input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.ui-slider__input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ui-slider__value {
+  min-width: 36px;
+  text-align: right;
+  font-size: 13px;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-slider__marks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* --- UploadZone ------------------------------------------------------------ */
+.ui-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 28px;
+  text-align: center;
+  border: 1.5px dashed var(--color-border-input);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+
+.ui-upload:hover:not(.ui-upload--disabled),
+.ui-upload--drag {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+}
+
+.ui-upload:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.ui-upload--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ui-upload__title {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: inherit;
+}
+
+.ui-upload__hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-soft);
+}
+
+.ui-upload__input {
+  display: none;
+}

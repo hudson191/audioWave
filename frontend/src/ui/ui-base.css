@@ -1,0 +1,151 @@
+/* ==========================================================================
+   Eyris UI kit — base: Button, Badge, Card, SectionTitle
+   Todo estilo via tokens (design-system/tokens.css).
+   ========================================================================== */
+
+:root {
+  /* Texto sobre superfícies sólidas primárias/semânticas (constante nos 2 temas) */
+  --ui-on-solid: #ffffff;
+}
+
+/* --- Button ------------------------------------------------------------- */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  line-height: 1;
+  color: var(--color-text);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.ui-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.ui-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ui-btn--solid {
+  background: var(--color-primary);
+  color: var(--ui-on-solid);
+}
+.ui-btn--solid:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.ui-btn--default {
+  background: var(--color-surface);
+  border-color: var(--color-border-input);
+}
+.ui-btn--default:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+
+.ui-btn--subtle {
+  background: var(--color-surface-muted);
+}
+.ui-btn--subtle:hover:not(:disabled) {
+  background: var(--color-border);
+}
+
+.ui-btn--ghost {
+  background: transparent;
+}
+.ui-btn--ghost:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+
+.ui-btn--sm {
+  height: 30px;
+  padding: 0 var(--space-3);
+  font-size: 13px;
+}
+
+.ui-btn--lg {
+  height: 42px;
+  padding: 0 20px;
+}
+
+.ui-btn__icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* --- Badge -------------------------------------------------------------- */
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  line-height: 1.5;
+}
+
+.ui-badge--neutral {
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+}
+.ui-badge--primary {
+  color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+.ui-badge--success {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+.ui-badge--danger {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+.ui-badge--warning {
+  color: var(--color-text);
+  background: var(--color-warning-bg);
+}
+.ui-badge--info {
+  color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
+/* --- Card --------------------------------------------------------------- */
+.ui-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.ui-card__label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.ui-card__value {
+  font-size: var(--text-xl);
+  font-weight: var(--fw-semibold);
+  line-height: 28px;
+  color: var(--color-text);
+}
+
+/* --- SectionTitle ------------------------------------------------------- */
+.ui-section-title {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
