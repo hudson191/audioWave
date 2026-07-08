@@ -117,6 +117,58 @@ describe("RenderEngine", () => {
     engine.dispose();
   });
 
+  it("aba oculta: segue desenhando via timer (sem depender de rAF)", () => {
+    // não faz fake de rAF: o stub de rafCallbacks do beforeEach deve valer
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    Object.defineProperty(document, "hidden", {
+      value: true,
+      configurable: true,
+    });
+    try {
+      const { engine } = createEngine();
+      engine.setScene("bars");
+      const getFrame = vi.fn(() => createMockFrame());
+      engine.start(getFrame);
+      expect(rafCallbacks.size).toBe(0); // oculto → não agenda rAF
+      vi.advanceTimersByTime(200);
+      expect(getFrame.mock.calls.length).toBeGreaterThanOrEqual(2);
+      engine.dispose();
+      vi.advanceTimersByTime(200);
+      expect(getFrame.mock.calls.length).toBeLessThanOrEqual(7);
+    } finally {
+      Reflect.deleteProperty(document, "hidden");
+      vi.useRealTimers();
+    }
+  });
+
+  it("visibilitychange alterna o driver entre rAF e timer", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const { engine } = createEngine();
+      engine.setScene("bars");
+      const getFrame = vi.fn(() => createMockFrame());
+      engine.start(getFrame); // visível → rAF
+      expect(rafCallbacks.size).toBe(1);
+
+      Object.defineProperty(document, "hidden", {
+        value: true,
+        configurable: true,
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+      expect(rafCallbacks.size).toBe(0);
+      vi.advanceTimersByTime(100);
+      expect(getFrame).toHaveBeenCalled();
+
+      Reflect.deleteProperty(document, "hidden");
+      document.dispatchEvent(new Event("visibilitychange"));
+      expect(rafCallbacks.size).toBe(1);
+      engine.dispose();
+    } finally {
+      Reflect.deleteProperty(document, "hidden");
+      vi.useRealTimers();
+    }
+  });
+
   it("dispose para o loop e ignora chamadas posteriores", () => {
     const { engine } = createEngine();
     engine.setScene("waveform");

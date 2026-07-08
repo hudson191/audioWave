@@ -1,10 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>audioWave</title>
+    <script>
+      // Aplica o tema ANTES do primeiro paint (evita flash de tema claro).
+      // Mesma lógica de resolveInitialTheme: valor salvo > preferência do SO.
+      (function () {
+        var theme = "light";
+        try {
+          var stored = window.localStorage.getItem("audiowave-theme");
+          if (stored === "dark" || stored === "light") {
+            theme = stored;
+          } else if (
+            typeof window.matchMedia === "function" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+          ) {
+            theme = "dark";
+          }
+        } catch (error) {
+          // localStorage indisponível (modo privado etc.) — segue com light
+        }
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -87,6 +87,62 @@ describe("Dialog", () => {
     ).toBeInTheDocument();
   });
 
+  it("não rouba o foco de um filho com autoFocus", () => {
+    render(
+      <Dialog open onClose={() => {}} title="Salvar">
+        <input aria-label="Nome" autoFocus />
+      </Dialog>,
+    );
+    expect(screen.getByLabelText("Nome")).toHaveFocus();
+  });
+
+  it("focus trap: Tab cicla apenas entre os elementos do dialog", async () => {
+    const outside = document.createElement("button");
+    outside.textContent = "fora";
+    document.body.appendChild(outside);
+    render(
+      <Dialog
+        open
+        onClose={() => {}}
+        title="Trap"
+        footer={<button type="button">Confirmar</button>}
+      >
+        <input aria-label="Campo" autoFocus />
+      </Dialog>,
+    );
+    const user = userEvent.setup();
+    const campo = screen.getByLabelText("Campo");
+    const confirmar = screen.getByRole("button", { name: "Confirmar" });
+    const fechar = screen.getByRole("button", { name: "Fechar" });
+
+    expect(campo).toHaveFocus();
+    await user.tab();
+    expect(confirmar).toHaveFocus();
+    await user.tab(); // último → volta ao primeiro (×), nunca sai do dialog
+    expect(fechar).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(confirmar).toHaveFocus();
+    expect(outside).not.toHaveFocus();
+    outside.remove();
+  });
+
+  it("focus trap: Shift+Tab no primeiro elemento vai para o último", async () => {
+    render(
+      <Dialog
+        open
+        onClose={() => {}}
+        title="Trap"
+        footer={<button type="button">Fim</button>}
+      >
+        Corpo
+      </Dialog>,
+    );
+    const user = userEvent.setup();
+    screen.getByRole("button", { name: "Fechar" }).focus();
+    await user.tab({ shift: true });
+    expect(screen.getByRole("button", { name: "Fim" })).toHaveFocus();
+  });
+
   it("restaura o foco ao fechar", () => {
     const outside = document.createElement("button");
     document.body.appendChild(outside);

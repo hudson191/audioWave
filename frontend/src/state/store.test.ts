@@ -230,6 +230,43 @@ describe("ações async", () => {
     expect(s.projects).toEqual([project]);
   });
 
+  it("saveProject prioriza o preset da cena corrente sobre o presetId do projeto aberto", async () => {
+    const waveformPreset: VisualPreset = {
+      id: "eyris-waveform",
+      name: "Waveform Eyris",
+      sceneId: "waveform",
+      settings: { sensitivity: 1, intensity: 1, paletteId: "eyris" },
+    };
+    vi.mocked(api.updateProject).mockResolvedValue(project);
+    // projeto aberto aponta para "eyris-particles", mas o usuário trocou a cena
+    useAppStore.setState({
+      project,
+      projects: [project],
+      presets: [preset, waveformPreset],
+      sceneId: "waveform",
+    });
+    await useAppStore.getState().saveProject("Demo");
+    expect(api.updateProject).toHaveBeenCalledWith(
+      "p1",
+      expect.objectContaining({ presetId: "eyris-waveform" }),
+    );
+  });
+
+  it("saveProject mantém o presetId do projeto quando nenhum preset cobre a cena", async () => {
+    vi.mocked(api.updateProject).mockResolvedValue(project);
+    useAppStore.setState({
+      project,
+      projects: [project],
+      presets: [],
+      sceneId: "waveform",
+    });
+    await useAppStore.getState().saveProject("Demo");
+    expect(api.updateProject).toHaveBeenCalledWith(
+      "p1",
+      expect.objectContaining({ presetId: "eyris-particles" }),
+    );
+  });
+
   it("saveProject atualiza projeto existente", async () => {
     const updated = { ...project, name: "Renomeado" };
     vi.mocked(api.updateProject).mockResolvedValue(updated);
@@ -269,6 +306,28 @@ describe("ações async", () => {
     const s = useAppStore.getState();
     expect(s.projects).toEqual([]);
     expect(s.project).toBeNull();
+  });
+
+  it("sucesso de uma ação concorrente não apaga o erro de outra (boot)", async () => {
+    // /api/presets falha rápido; /api/projects resolve depois
+    vi.mocked(api.getPresets).mockRejectedValue(
+      new ApiError("Não foi possível conectar ao servidor"),
+    );
+    let resolveProjects: (value: Project[]) => void = () => {};
+    vi.mocked(api.getProjects).mockReturnValue(
+      new Promise<Project[]>((resolve) => {
+        resolveProjects = resolve;
+      }),
+    );
+    const both = Promise.all([
+      useAppStore.getState().loadPresets(),
+      useAppStore.getState().loadProjects(),
+    ]);
+    resolveProjects([project]);
+    await both;
+    const s = useAppStore.getState();
+    expect(s.projects).toEqual([project]);
+    expect(s.error).toBe("Não foi possível conectar ao servidor");
   });
 
   it("erro não-ApiError vira mensagem genérica amigável", async () => {

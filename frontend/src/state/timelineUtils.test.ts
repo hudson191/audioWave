@@ -62,12 +62,24 @@ describe("sceneIdAt", () => {
     expect(sceneIdAt(timeline, 10, "fallback")).toBe("waveform");
   });
 
-  it("end é exclusivo", () => {
-    expect(sceneIdAt(timeline, 20, "fallback")).toBe("fallback");
+  it("end é exclusivo nas bordas internas (bloco seguinte vence)", () => {
+    expect(sceneIdAt(timeline, 10, "fallback")).toBe("waveform");
+  });
+
+  it("borda final da timeline é inclusiva (sem flash no último frame)", () => {
+    // t === maior end (fim do playback/export) mantém a cena do último bloco
+    expect(sceneIdAt(timeline, 20, "fallback")).toBe("waveform");
+  });
+
+  it("fim de bloco no meio da timeline (com gap) continua exclusivo", () => {
+    const withGap = [block("a", 0, 10, "bars"), block("b", 15, 20, "waveform")];
+    expect(sceneIdAt(withGap, 10, "fallback")).toBe("fallback");
+    expect(sceneIdAt(withGap, 20, "fallback")).toBe("waveform");
   });
 
   it("retorna fallback fora de qualquer bloco", () => {
     expect(sceneIdAt(timeline, 999, "particles")).toBe("particles");
+    expect(sceneIdAt(timeline, 20.001, "particles")).toBe("particles");
     expect(sceneIdAt([], 5, "particles")).toBe("particles");
   });
 });

@@ -55,11 +55,15 @@ async function parseEnvelope(res: Response): Promise<ApiResponse<unknown>> {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // Content-Type só quando há body: enviar "application/json" em requisições
+  // sem corpo (ex.: DELETE) faz o Fastify rejeitar com 400 (body JSON vazio).
+  const headers =
+    init?.body != null ? { "Content-Type": "application/json" } : undefined;
   let res: Response;
   try {
     res = await fetch(`${API_BASE}${path}`, {
-      headers: { "Content-Type": "application/json" },
       ...init,
+      ...(headers ? { headers } : {}),
     });
   } catch (error: unknown) {
     console.error("[api] falha de rede", error);

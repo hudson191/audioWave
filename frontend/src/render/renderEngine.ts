@@ -19,6 +19,12 @@ import { clampSettings, DEFAULT_SETTINGS } from "./settings";
 
 const MAX_DT = 0.1; // segundos
 const DEFAULT_DT = 1 / 60;
+/**
+ * Em aba oculta o rAF é suspenso, mas o áudio (e uma eventual exportação via
+ * MediaRecorder) continua: o loop cai para setTimeout para seguir desenhando.
+ * Navegadores clampam timers em background (~1s), ainda assim >> congelado.
+ */
+const HIDDEN_FRAME_INTERVAL_MS = 1000 / 30;
 
 export class RenderEngine {
   private readonly canvas: HTMLCanvasElement;
@@ -28,6 +34,7 @@ export class RenderEngine {
   private scene: RenderScene | null = null;
   private getFrame: (() => AudioFrame) | null = null;
   private rafId: number | null = null;
+  private timerId: ReturnType<typeof setTimeout> | null = null;
   private lastTimestamp: number | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private cssWidth = 0;
@@ -80,15 +87,14 @@ export class RenderEngine {
     if (this.disposed) return;
     this.stop();
     this.getFrame = getFrame;
-    this.rafId = requestAnimationFrame(this.tick);
+    this.listenVisibility(true);
+    this.scheduleNext();
   }
 
   /** Para o loop (mantém cena e estado). */
   stop(): void {
-    if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
-    }
+    this.listenVisibility(false);
+    this.cancelScheduled();
     this.lastTimestamp = null;
   }
 
@@ -115,8 +121,51 @@ export class RenderEngine {
       this.stop();
       return;
     }
-    this.rafId = requestAnimationFrame(this.tick);
+    this.scheduleNext();
   };
+
+  /** Agenda o próximo frame: rAF quando visível, setTimeout quando oculto. */
+  private scheduleNext(): void {
+    if (this.disposed || !this.getFrame) return;
+    if (isDocumentHidden()) {
+      this.timerId = setTimeout(() => {
+        this.timerId = null;
+        this.tick(performance.now());
+      }, HIDDEN_FRAME_INTERVAL_MS);
+      return;
+    }
+    this.rafId = requestAnimationFrame(this.tick);
+  }
+
+  private cancelScheduled(): void {
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    if (this.timerId !== null) {
+      clearTimeout(this.timerId);
+      this.timerId = null;
+    }
+  }
+
+  /** Ao mudar a visibilidade, reagenda no driver adequado (rAF ↔ timer). */
+  private readonly handleVisibilityChange = (): void => {
+    if (this.disposed || !this.getFrame) return;
+    this.cancelScheduled();
+    this.scheduleNext();
+  };
+
+  private listenVisibility(active: boolean): void {
+    if (typeof document === "undefined") return;
+    if (active) {
+      document.addEventListener("visibilitychange", this.handleVisibilityChange);
+    } else {
+      document.removeEventListener(
+        "visibilitychange",
+        this.handleVisibilityChange,
+      );
+    }
+  }
 
   private computeDt(timestamp: number): number {
     const previous = this.lastTimestamp;
@@ -169,4 +218,8 @@ function getDevicePixelRatio(): number {
   if (typeof window === "undefined") return 1;
   const dpr = window.devicePixelRatio;
   return Number.isFinite(dpr) && dpr > 0 ? dpr : 1;
+}
+
+function isDocumentHidden(): boolean {
+  return typeof document !== "undefined" && document.hidden;
 }

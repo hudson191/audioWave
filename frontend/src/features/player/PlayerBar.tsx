@@ -9,6 +9,7 @@ import { useEngines } from "../engine/EngineContext";
 import { subscribeFrameSignal } from "../visualizer/frameEvents";
 import { SeekBar } from "./SeekBar";
 import { formatTime } from "./formatTime";
+import "./player.css";
 
 const PULSE_DURATION_MS = 140;
 

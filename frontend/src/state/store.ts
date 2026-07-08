@@ -95,9 +95,11 @@ function upsertProject(projects: readonly Project[], saved: Project): Project[] 
 }
 
 function buildProjectInput(state: AppState, name: string): ProjectInput {
+  // A cena corrente manda: o presetId do projeto carregado pode estar
+  // obsoleto se o usuário trocou de cena/preset depois de abrir o projeto.
   const presetId =
-    state.project?.presetId ??
     state.presets.find((p) => p.sceneId === state.sceneId)?.id ??
+    state.project?.presetId ??
     state.sceneId;
   return {
     name,
@@ -184,10 +186,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   clearError: () => set({ error: null }),
 
+  // Nas ações async, o erro global é limpo no INÍCIO da ação (nunca no
+  // sucesso): limpar no sucesso apagaria o erro de uma ação concorrente
+  // (ex.: loadPresets falha e loadProjects resolve depois no boot).
   loadPresets: async () => {
+    set({ error: null });
     try {
       const presets = await api.getPresets();
-      set({ presets, error: null });
+      set({ presets });
     } catch (error: unknown) {
       set({
         error: toFriendlyMessage(error, "Não foi possível carregar os presets."),
@@ -196,9 +202,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   loadProjects: async () => {
+    set({ error: null });
     try {
       const projects = await api.getProjects();
-      set({ projects, error: null });
+      set({ projects });
     } catch (error: unknown) {
       set({
         error: toFriendlyMessage(
@@ -210,6 +217,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   loadProject: async (id) => {
+    set({ error: null });
     try {
       const project = await api.getProject(id);
       const preset = get().presets.find((p) => p.id === project.presetId);
@@ -221,7 +229,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
         sceneId,
         settings: { ...project.settings },
         timeline: sortBlocks(project.timeline),
-        error: null,
       });
     } catch (error: unknown) {
       set({
@@ -231,6 +238,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   saveProject: async (name) => {
+    set({ error: null });
     const trimmed = name.trim();
     if (!trimmed) {
       set({ error: "Informe um nome para o projeto." });
@@ -245,7 +253,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set((s) => ({
         project: saved,
         projects: upsertProject(s.projects, saved),
-        error: null,
       }));
     } catch (error: unknown) {
       set({
@@ -255,12 +262,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   deleteProject: async (id) => {
+    set({ error: null });
     try {
       await api.deleteProject(id);
       set((s) => ({
         projects: s.projects.filter((p) => p.id !== id),
         project: s.project?.id === id ? null : s.project,
-        error: null,
       }));
     } catch (error: unknown) {
       set({

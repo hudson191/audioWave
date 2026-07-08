@@ -24,6 +24,9 @@ export function blocksOverlap(a: TimelineBlock, b: TimelineBlock): boolean {
 
 /**
  * Cena ativa no instante `time` (segundos).
+ * Intervalos são [start, end), mas a borda FINAL da timeline é inclusiva:
+ * em t === maior end (fim do playback/export), mantém a cena do último
+ * bloco em vez de saltar para o fallback (evita flash no último frame).
  * Fora de qualquer bloco, retorna `fallbackSceneId`.
  */
 export function sceneIdAt(
@@ -34,7 +37,20 @@ export function sceneIdAt(
   const active = timeline.find(
     (block) => time >= block.start && time < block.end,
   );
-  return active ? active.sceneId : fallbackSceneId;
+  if (active) {
+    return active.sceneId;
+  }
+  const lastEnd = timeline.reduce(
+    (max, block) => Math.max(max, block.end),
+    Number.NEGATIVE_INFINITY,
+  );
+  if (time === lastEnd) {
+    const closing = timeline.find((block) => block.end === lastEnd);
+    if (closing) {
+      return closing.sceneId;
+    }
+  }
+  return fallbackSceneId;
 }
 
 /** Valida um bloco isolado; retorna mensagem de erro amigável ou null. */

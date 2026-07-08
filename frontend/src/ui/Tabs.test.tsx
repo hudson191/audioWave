@@ -44,6 +44,36 @@ describe("Tabs", () => {
     );
   });
 
+  it("com id explícito, a aba ativa expõe aria-controls do painel", () => {
+    render(
+      <>
+        <Tabs
+          id="painel"
+          items={ITEMS}
+          value="paleta"
+          onChange={() => {}}
+          label="Painéis"
+        />
+        <div
+          role="tabpanel"
+          id="painel-panel-paleta"
+          aria-labelledby="painel-tab-paleta"
+        >
+          Conteúdo
+        </div>
+      </>,
+    );
+    const ativa = screen.getByRole("tab", { name: "Paleta" });
+    expect(ativa).toHaveAttribute("id", "painel-tab-paleta");
+    expect(ativa).toHaveAttribute("aria-controls", "painel-panel-paleta");
+    expect(screen.getByRole("tab", { name: "Cena" })).not.toHaveAttribute(
+      "aria-controls",
+    );
+    expect(
+      screen.getByRole("tabpanel", { name: "Paleta" }),
+    ).toBeInTheDocument();
+  });
+
   it("apenas a aba ativa participa da ordem de tabulação", () => {
     render(
       <Tabs items={ITEMS} value="cena" onChange={() => {}} label="Painéis" />,

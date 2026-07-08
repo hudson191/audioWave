@@ -1,8 +1,11 @@
 /**
  * Motor de áudio (Web Audio API) — API pública conforme CONTRACTS.md.
  *
- * Grafo: AudioBufferSourceNode → GainNode → AnalyserNode → destination
- *                                                        ↘ MediaStreamAudioDestinationNode (export)
+ * Grafo: AudioBufferSourceNode → AnalyserNode → GainNode → destination
+ *                                             ↘ MediaStreamAudioDestinationNode (export)
+ * O GainNode fica APÓS o AnalyserNode e fora do caminho de export: o volume
+ * da UI afeta só a monitoração local — análise (bandas/beat/BPM/level) e o
+ * áudio gravado no vídeo exportado independem do slider de volume.
  * Source nodes são one-shot: um novo é criado a cada play/seek.
  * Controle de tempo: context.currentTime - startedAt + offset.
  *
@@ -91,7 +94,7 @@ export class AudioEngine {
     if (this.disposed || !this.buffer || this.status === "playing") {
       return;
     }
-    const { context, gain } = this.ensureGraph();
+    const { context, analyser } = this.ensureGraph();
     if (this.status === "ended") {
       this.offset = 0;
       this.beatDetector.reset();
@@ -101,7 +104,7 @@ export class AudioEngine {
         console.error("[AudioEngine] falha ao retomar AudioContext:", error);
       });
     }
-    this.startSource(context, gain);
+    this.startSource(context, analyser);
     this.setStatus("playing");
   }
 
@@ -122,8 +125,8 @@ export class AudioEngine {
     this.beatDetector.reset();
     this.offset = clamped;
     if (this.status === "playing") {
-      const { context, gain } = this.ensureGraph();
-      this.startSource(context, gain);
+      const { context, analyser } = this.ensureGraph();
+      this.startSource(context, analyser);
     } else if (this.status === "ended" && clamped < this.buffer.duration) {
       this.setStatus("paused");
     }
@@ -246,8 +249,9 @@ export class AudioEngine {
     analyser.fftSize = FFT_SIZE;
     analyser.smoothingTimeConstant = ANALYSER_SMOOTHING;
     const streamDestination = context.createMediaStreamDestination();
-    gain.connect(analyser);
-    analyser.connect(context.destination);
+    // análise e export pré-gain; gain só na saída de monitoração local
+    analyser.connect(gain);
+    gain.connect(context.destination);
     analyser.connect(streamDestination);
     this.context = context;
     this.gainNode = gain;
@@ -257,11 +261,11 @@ export class AudioEngine {
   }
 
   /** Cria e inicia um novo source (nodes são one-shot) a partir de offset. */
-  private startSource(context: AudioContext, gain: GainNode): void {
+  private startSource(context: AudioContext, analyser: AnalyserNode): void {
     this.stopSource();
     const source = context.createBufferSource();
     source.buffer = this.buffer;
-    source.connect(gain);
+    source.connect(analyser);
     source.onended = () => {
       this.handleNaturalEnd(source);
     };

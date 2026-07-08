@@ -89,6 +89,60 @@ describe("projectPatchSchema", () => {
   });
 });
 
+describe("limites de tamanho", () => {
+  it("rejeita audioFileName com mais de 255 caracteres", () => {
+    const result = projectInputSchema.safeParse({
+      ...validInput,
+      audioFileName: "a".repeat(256),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejeita presetId e paletteId com mais de 100 caracteres", () => {
+    expect(
+      projectInputSchema.safeParse({ ...validInput, presetId: "p".repeat(101) })
+        .success,
+    ).toBe(false);
+    expect(
+      projectInputSchema.safeParse({
+        ...validInput,
+        settings: { ...validInput.settings, paletteId: "x".repeat(101) },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejeita id/sceneId de bloco com mais de 100 caracteres", () => {
+    expect(
+      timelineBlockSchema.safeParse({
+        id: "i".repeat(101),
+        sceneId: "bars",
+        start: 0,
+        end: 5,
+      }).success,
+    ).toBe(false);
+    expect(
+      timelineBlockSchema.safeParse({
+        id: "b",
+        sceneId: "s".repeat(101),
+        start: 0,
+        end: 5,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejeita timeline com mais de 200 blocos", () => {
+    const timeline = Array.from({ length: 201 }, (_, index) => ({
+      id: `b${index}`,
+      sceneId: "bars",
+      start: index,
+      end: index + 1,
+    }));
+    expect(projectInputSchema.safeParse({ ...validInput, timeline }).success).toBe(
+      false,
+    );
+  });
+});
+
 describe("formatZodError", () => {
   it("inclui caminho e mensagem de cada issue", () => {
     const result = projectInputSchema.safeParse({ ...validInput, name: "" });
@@ -96,5 +150,17 @@ describe("formatZodError", () => {
     const message = formatZodError(result.error);
     expect(message).toMatch(/^Dados inválidos: /);
     expect(message).toContain("name");
+  });
+
+  it("mensagens estruturais padrão saem em pt-BR (sem defaults em inglês)", () => {
+    const result = projectInputSchema.safeParse(undefined);
+    if (result.success) throw new Error("deveria falhar");
+    const message = formatZodError(result.error);
+    expect(message).not.toMatch(/Invalid input/);
+    expect(message).toMatch(/Dados inválidos/);
+
+    const typeResult = projectInputSchema.safeParse("string qualquer");
+    if (typeResult.success) throw new Error("deveria falhar");
+    expect(formatZodError(typeResult.error)).not.toMatch(/expected object/);
   });
 });

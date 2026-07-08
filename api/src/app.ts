@@ -36,9 +36,40 @@ export interface BuildAppOptions {
   logger?: FastifyServerOptions["logger"];
 }
 
+function badRequestError(message: string): Error & { statusCode: number } {
+  const error = new Error(message) as Error & { statusCode: number };
+  error.statusCode = 400;
+  return error;
+}
+
+/**
+ * Parser JSON tolerante a body vazio: requisições com header
+ * "Content-Type: application/json" sem corpo (ex.: DELETE de alguns
+ * clients) viram body undefined em vez de 400 antes da rota.
+ */
+function registerJsonParser(app: FastifyInstance): void {
+  app.addContentTypeParser(
+    "application/json",
+    { parseAs: "string" },
+    (_request, body, done) => {
+      if (typeof body !== "string" || body.trim() === "") {
+        done(null, undefined);
+        return;
+      }
+      try {
+        done(null, JSON.parse(body));
+      } catch {
+        done(badRequestError(BAD_REQUEST_MESSAGE), undefined);
+      }
+    },
+  );
+}
+
 export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyInstance> {
   const app = fastify({ logger: options.logger ?? false });
   const repository = options.repository ?? new JsonFileProjectRepository();
+
+  registerJsonParser(app);
 
   await app.register(cors, {
     origin: FRONTEND_ORIGIN,

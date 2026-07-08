@@ -7,6 +7,7 @@ import { validateAudioFile } from "../../audio";
 import { useAppStore } from "../../state";
 import { useEngines } from "../engine/EngineContext";
 import { getErrorMessage } from "../common/errors";
+import "./upload.css";
 
 const ACCEPT = ".mp3,.wav,.ogg,.m4a";
 

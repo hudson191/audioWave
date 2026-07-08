@@ -29,11 +29,21 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+/** Ranges do contrato (CONTRACTS.md), iguais aos do Zod da API. */
+const SENSITIVITY_RANGE = { min: 0.1, max: 3 } as const;
+const INTENSITY_RANGE = { min: 0.1, max: 2 } as const;
+
+function inRange(value: number, range: { min: number; max: number }): boolean {
+  return value >= range.min && value <= range.max;
+}
+
 function isSceneSettings(value: unknown): value is SceneSettings {
   return (
     isRecord(value) &&
     isFiniteNumber(value.sensitivity) &&
+    inRange(value.sensitivity, SENSITIVITY_RANGE) &&
     isFiniteNumber(value.intensity) &&
+    inRange(value.intensity, INTENSITY_RANGE) &&
     typeof value.paletteId === "string"
   );
 }
@@ -44,7 +54,9 @@ function isTimelineBlock(value: unknown): value is TimelineBlock {
     typeof value.id === "string" &&
     typeof value.sceneId === "string" &&
     isFiniteNumber(value.start) &&
-    isFiniteNumber(value.end)
+    isFiniteNumber(value.end) &&
+    value.start >= 0 &&
+    value.end > value.start
   );
 }
 

@@ -16,6 +16,12 @@ export interface TabsProps {
   onChange: (id: string) => void;
   /** Rótulo acessível do tablist. */
   label?: string;
+  /**
+   * Prefixo estável para os ids `{id}-tab-{item.id}` / `{id}-panel-{item.id}`.
+   * Informe-o para associar o conteúdo via
+   * `<div role="tabpanel" id="{id}-panel-{ativo}" aria-labelledby="{id}-tab-{ativo}">`.
+   */
+  id?: string;
   className?: string;
 }
 
@@ -46,8 +52,9 @@ function edgeEnabledIndex(items: readonly TabItem[], fromEnd: boolean): number {
  * Tabs Eyris — underline 2px, role tablist/tab, aria-selected e navegação
  * por setas (ativação segue o foco).
  */
-export function Tabs({ items, value, onChange, label, className }: TabsProps) {
-  const baseId = useId();
+export function Tabs({ items, value, onChange, label, id, className }: TabsProps) {
+  const autoId = useId();
+  const baseId = id ?? autoId;
   const refs = useRef(new Map<string, HTMLButtonElement>());
 
   function activate(index: number): void {
@@ -86,6 +93,7 @@ export function Tabs({ items, value, onChange, label, className }: TabsProps) {
             id={`${baseId}-tab-${item.id}`}
             className="ui-tab"
             aria-selected={selected}
+            aria-controls={selected ? `${baseId}-panel-${item.id}` : undefined}
             tabIndex={selected ? 0 : -1}
             disabled={item.disabled}
             ref={(el) => {

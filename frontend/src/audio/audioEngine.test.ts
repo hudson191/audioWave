@@ -150,6 +150,25 @@ describe("AudioEngine", () => {
     expect(analyser.smoothingTimeConstant).toBe(ANALYSER_SMOOTHING);
   });
 
+  it("grafo: source → analyser → gain → destination; export pré-gain", async () => {
+    const engine = await loadedEngine();
+    engine.play();
+    const ctx = lastContext();
+    const analyser = ctx.analysers[0]!;
+    const gain = ctx.gains[0]!;
+    // análise e export NÃO passam pelo gain (volume da UI não afeta ambos)
+    expect(lastSource().connections).toEqual([analyser]);
+    expect(analyser.connections).toContain(gain);
+    expect(
+      analyser.connections.some(
+        (node) => node instanceof FakeStreamDestination,
+      ),
+    ).toBe(true);
+    // monitoração local passa pelo gain
+    expect(gain.connections).toEqual([ctx.destination]);
+    expect(gain.connections).not.toContain(analyser);
+  });
+
   it("play/pause controlam status e tempo via currentTime do contexto", async () => {
     const engine = await loadedEngine();
     engine.play();

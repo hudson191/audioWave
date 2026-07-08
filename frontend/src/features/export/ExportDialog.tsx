@@ -18,6 +18,7 @@ import {
   findResolution,
   pickSupportedMimeType,
 } from "./exportUtils";
+import "./export.css";
 
 const UNSUPPORTED_MESSAGE =
   "Seu navegador não suporta gravação de vídeo (MediaRecorder). Use uma versão recente do Chrome, Edge ou Firefox.";
@@ -70,9 +71,14 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     }
   }, [open]);
 
-  /** Encerra a gravação ativa: "done" baixa o vídeo, "cancel" descarta. */
+  /**
+   * Encerra a gravação ativa: "done" baixa o vídeo, "cancel" descarta,
+   * "error" descarta e fixa exportStatus "error". O status final é decidido
+   * SOMENTE pelo finalize (que roda uma única vez, mesmo que o evento stop
+   * do recorder chegue depois de uma execução síncrona).
+   */
   const finishRecording = useCallback(
-    (outcome: "done" | "cancel"): void => {
+    (outcome: "done" | "cancel" | "error"): void => {
       const active = recordingRef.current;
       if (!active) {
         return;
@@ -82,7 +88,13 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
       getAudioEngine().pause();
       const store = useAppStore.getState();
 
+      let finalized = false;
       const finalize = (): void => {
+        if (finalized) {
+          return;
+        }
+        finalized = true;
+        active.recorder.onstop = null;
         active.stopTracks();
         active.restoreSize();
         if (outcome === "done") {
@@ -103,7 +115,9 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
         } else {
           chunksRef.current = [];
           useAppStore.getState().setExportProgress(0);
-          useAppStore.getState().setExportStatus("idle");
+          useAppStore
+            .getState()
+            .setExportStatus(outcome === "error" ? "error" : "idle");
         }
       };
 
@@ -199,9 +213,9 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     };
     recorder.onerror = (event: Event) => {
       console.error("[export] erro do MediaRecorder:", event);
-      finishRecording("cancel");
+      // o finalize de finishRecording fixa exportStatus "error" uma única vez
+      finishRecording("error");
       toast.error("Erro durante a gravação", "A exportação foi interrompida.");
-      useAppStore.getState().setExportStatus("error");
     };
 
     // só as tracks de vídeo são nossas; as de áudio pertencem ao engine

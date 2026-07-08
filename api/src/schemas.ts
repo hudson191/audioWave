@@ -5,6 +5,17 @@
 import { z } from "zod";
 import type { Project, ProjectInput, ProjectPatch } from "./types.js";
 
+// Mensagens padrão do Zod em pt-BR (cobre issues estruturais sem mensagem
+// customizada, ex.: body ausente/tipo errado na raiz do objeto).
+z.config(z.locales.pt());
+
+/** Limites de tamanho (defesa contra payloads gigantes persistidos). */
+export const MAX_ID_LENGTH = 100;
+export const MAX_AUDIO_FILE_NAME_LENGTH = 255;
+export const MAX_TIMELINE_BLOCKS = 200;
+
+const ID_TOO_LONG = `deve ter no máximo ${MAX_ID_LENGTH} caracteres`;
+
 export const sceneSettingsSchema = z.object({
   sensitivity: z
     .number("sensitivity deve ser um número")
@@ -14,13 +25,22 @@ export const sceneSettingsSchema = z.object({
     .number("intensity deve ser um número")
     .min(0.1, "intensity deve estar entre 0.1 e 2")
     .max(2, "intensity deve estar entre 0.1 e 2"),
-  paletteId: z.string("paletteId deve ser um texto").min(1, "paletteId é obrigatório"),
+  paletteId: z
+    .string("paletteId deve ser um texto")
+    .min(1, "paletteId é obrigatório")
+    .max(MAX_ID_LENGTH, `paletteId ${ID_TOO_LONG}`),
 });
 
 export const timelineBlockSchema = z
   .object({
-    id: z.string("id deve ser um texto").min(1, "id do bloco é obrigatório"),
-    sceneId: z.string("sceneId deve ser um texto").min(1, "sceneId é obrigatório"),
+    id: z
+      .string("id deve ser um texto")
+      .min(1, "id do bloco é obrigatório")
+      .max(MAX_ID_LENGTH, `id do bloco ${ID_TOO_LONG}`),
+    sceneId: z
+      .string("sceneId deve ser um texto")
+      .min(1, "sceneId é obrigatório")
+      .max(MAX_ID_LENGTH, `sceneId ${ID_TOO_LONG}`),
     start: z.number("start deve ser um número").min(0, "start não pode ser negativo"),
     end: z.number("end deve ser um número").min(0, "end não pode ser negativo"),
   })
@@ -38,10 +58,22 @@ export const projectInputSchema = z.object({
   audioFileName: z
     .string("audioFileName deve ser um texto ou null")
     .min(1, "audioFileName não pode ser vazio")
+    .max(
+      MAX_AUDIO_FILE_NAME_LENGTH,
+      `audioFileName deve ter no máximo ${MAX_AUDIO_FILE_NAME_LENGTH} caracteres`,
+    )
     .nullable(),
-  presetId: z.string("presetId deve ser um texto").min(1, "presetId é obrigatório"),
+  presetId: z
+    .string("presetId deve ser um texto")
+    .min(1, "presetId é obrigatório")
+    .max(MAX_ID_LENGTH, `presetId ${ID_TOO_LONG}`),
   settings: sceneSettingsSchema,
-  timeline: z.array(timelineBlockSchema, "timeline deve ser uma lista de blocos"),
+  timeline: z
+    .array(timelineBlockSchema, "timeline deve ser uma lista de blocos")
+    .max(
+      MAX_TIMELINE_BLOCKS,
+      `timeline deve ter no máximo ${MAX_TIMELINE_BLOCKS} blocos`,
+    ),
 });
 
 export const projectPatchSchema = projectInputSchema.partial();

@@ -111,6 +111,32 @@ describe("client — sucesso", () => {
       expect.objectContaining({ method: "DELETE" }),
     );
   });
+
+  it("NÃO envia Content-Type em requisições sem body (DELETE/GET)", async () => {
+    const mock = stubFetch(envelope(null));
+    await deleteProject("p1");
+    await getProjects().catch(() => undefined);
+    for (const call of mock.mock.calls) {
+      const init = call[1] as RequestInit | undefined;
+      expect(init?.headers).toBeUndefined();
+    }
+  });
+
+  it("envia Content-Type: application/json quando há body (POST/PUT)", async () => {
+    const mock = stubFetch(envelope(project), 201);
+    await createProject({
+      name: project.name,
+      audioFileName: project.audioFileName,
+      presetId: project.presetId,
+      settings: project.settings,
+      timeline: project.timeline,
+    });
+    await updateProject("p1", { name: "Novo" });
+    for (const call of mock.mock.calls) {
+      const init = call[1] as RequestInit | undefined;
+      expect(init?.headers).toEqual({ "Content-Type": "application/json" });
+    }
+  });
 });
 
 describe("client — erros", () => {

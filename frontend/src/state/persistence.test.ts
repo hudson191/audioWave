@@ -86,6 +86,39 @@ describe("parsePersisted — parse defensivo", () => {
     expect(parsePersisted(raw)).toBeNull();
   });
 
+  it("settings fora dos ranges do contrato retornam null", () => {
+    const outOfRange = [
+      { sensitivity: 9999, intensity: 1, paletteId: "neon" },
+      { sensitivity: 0.05, intensity: 1, paletteId: "neon" },
+      { sensitivity: 1, intensity: -50, paletteId: "neon" },
+      { sensitivity: 1, intensity: 2.5, paletteId: "neon" },
+    ];
+    for (const settings of outOfRange) {
+      const raw = JSON.stringify({
+        ...snapshot,
+        version: PERSIST_VERSION,
+        settings,
+      });
+      expect(parsePersisted(raw)).toBeNull();
+    }
+  });
+
+  it("timeline com start negativo ou end <= start retorna null", () => {
+    const invalidBlocks = [
+      [{ id: "a", sceneId: "bars", start: -1, end: 10 }],
+      [{ id: "a", sceneId: "bars", start: 5, end: 2 }],
+      [{ id: "a", sceneId: "bars", start: 5, end: 5 }],
+    ];
+    for (const timeline of invalidBlocks) {
+      const raw = JSON.stringify({
+        ...snapshot,
+        version: PERSIST_VERSION,
+        timeline,
+      });
+      expect(parsePersisted(raw)).toBeNull();
+    }
+  });
+
   it("timeline com bloco malformado retorna null", () => {
     const raw = JSON.stringify({
       ...snapshot,

@@ -1,0 +1,22 @@
+/* Diálogo de exportação de vídeo (audioWave) */
+
+.export-form,
+.export-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.export-progress p,
+.export-form p {
+  margin: 0;
+}
+
+.export-status {
+  margin: 0;
+  font-size: 13px;
+}
+
+.export-status--done {
+  color: var(--color-success);
+}

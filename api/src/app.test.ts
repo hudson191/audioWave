@@ -109,6 +109,15 @@ describe("API audioWave", () => {
       expect(body.error).toMatch(/name/);
     });
 
+    it("400 estrutural com mensagem clara em pt-BR quando o body está ausente", async () => {
+      const res = await app.inject({ method: "POST", url: "/api/projects" });
+      expect(res.statusCode).toBe(400);
+      const body = res.json<ApiResponse<null>>();
+      expect(body.success).toBe(false);
+      expect(body.error).toMatch(/Dados inválidos/);
+      expect(body.error).not.toMatch(/Invalid input|expected object|received/);
+    });
+
     it("400 quando o JSON é malformado", async () => {
       const res = await app.inject({
         method: "POST",
@@ -206,9 +215,41 @@ describe("API audioWave", () => {
       expect(after.statusCode).toBe(404);
     });
 
+    it("aceita Content-Type: application/json com body vazio (fetch de browsers)", async () => {
+      const created = await createProject();
+      const res = await app.inject({
+        method: "DELETE",
+        url: `/api/projects/${created.id}`,
+        headers: { "content-type": "application/json" },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ success: true, data: null, error: null });
+
+      const after = await app.inject({ method: "GET", url: `/api/projects/${created.id}` });
+      expect(after.statusCode).toBe(404);
+    });
+
     it("404 para id inexistente", async () => {
       const res = await app.inject({ method: "DELETE", url: "/api/projects/nao-existe" });
       expect(res.statusCode).toBe(404);
+    });
+  });
+
+  describe("integração real (listen + fetch)", () => {
+    it("DELETE via fetch com Content-Type JSON e sem body remove o projeto", async () => {
+      const created = await createProject();
+      const address = await app.listen({ port: 0, host: "127.0.0.1" });
+
+      // reproduz exatamente o que um client fetch de browser enviaria
+      const res = await fetch(`${address}/api/projects/${created.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ success: true, data: null, error: null });
+
+      const after = await fetch(`${address}/api/projects/${created.id}`);
+      expect(after.status).toBe(404);
     });
   });
 
