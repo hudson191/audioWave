@@ -8,3 +8,5 @@ api/data/*.json
 .claude/
 design-system/
 CONTRACTS.md
+graphify-out/
+samples/
