@@ -5,3 +5,6 @@ coverage/
 .DS_Store
 .env
 api/data/*.json
+.claude/
+design-system/
+CONTRACTS.md
