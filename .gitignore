@@ -9,4 +9,5 @@ api/data/*.json
 design-system/
 CONTRACTS.md
 graphify-out/
-samples/
+# fixtures de áudio reais (grandes) ficam fora; o WAV sintético é versionado
+samples/*.m4a
