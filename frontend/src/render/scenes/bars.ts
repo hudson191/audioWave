@@ -57,11 +57,12 @@ export class BarsScene implements RenderScene {
     peaks: readonly number[],
   ): void {
     const { ctx, width, height, palette } = sc;
+    // limpa para TRANSPARENTE: o fundo (cor/imagem) é responsabilidade do
+    // RenderEngine, que compõe esta camada sobre ele
     ctx.globalCompositeOperation = "source-over";
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
-    ctx.fillStyle = palette.background;
-    ctx.fillRect(0, 0, width, height);
+    ctx.clearRect(0, 0, width, height);
 
     const slot = width / Math.max(1, values.length);
     const barWidth = Math.max(1, slot * 0.6);

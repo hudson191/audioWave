@@ -11,6 +11,14 @@ export interface ApiResponse<T> {
   error: string | null;
 }
 
+/** Caixa do elemento visual em % do canvas (x/y 0-100, width/height 5-100). */
+export interface ElementBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface SceneSettings {
   /** 0.1–3, default 1 */
   sensitivity: number;
@@ -18,6 +26,12 @@ export interface SceneSettings {
   intensity: number;
   /** id do preset de paleta */
   paletteId: string;
+  /**
+   * posição/tamanho do elemento em % do canvas; ausente = tela cheia.
+   * `| undefined` explícito por exactOptionalPropertyTypes (shape do Zod
+   * `.optional()`).
+   */
+  element?: ElementBox | undefined;
 }
 
 export interface VisualPreset {

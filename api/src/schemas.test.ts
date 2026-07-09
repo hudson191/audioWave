@@ -164,3 +164,50 @@ describe("formatZodError", () => {
     expect(formatZodError(typeResult.error)).not.toMatch(/expected object/);
   });
 });
+
+describe("elementBoxSchema (settings.element)", () => {
+  const settingsWith = (element: unknown) => ({
+    ...validInput,
+    settings: { ...validInput.settings, element },
+  });
+
+  it("aceita settings sem element (tela cheia)", () => {
+    expect(projectInputSchema.safeParse(validInput).success).toBe(true);
+  });
+
+  it("aceita element válido", () => {
+    const result = projectInputSchema.safeParse(
+      settingsWith({ x: 10, y: 20, width: 50, height: 40 }),
+    );
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.settings.element).toEqual({
+        x: 10,
+        y: 20,
+        width: 50,
+        height: 40,
+      });
+    }
+  });
+
+  it("rejeita posição fora de 0-100", () => {
+    const result = projectInputSchema.safeParse(
+      settingsWith({ x: 120, y: 0, width: 50, height: 50 }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  it("rejeita tamanho fora de 5-100", () => {
+    const result = projectInputSchema.safeParse(
+      settingsWith({ x: 0, y: 0, width: 2, height: 50 }),
+    );
+    expect(result.success).toBe(false);
+  });
+
+  it("rejeita element com campo não numérico", () => {
+    const result = projectInputSchema.safeParse(
+      settingsWith({ x: "10", y: 0, width: 50, height: 50 }),
+    );
+    expect(result.success).toBe(false);
+  });
+});

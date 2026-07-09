@@ -32,9 +32,27 @@ function isFiniteNumber(value: unknown): value is number {
 /** Ranges do contrato (CONTRACTS.md), iguais aos do Zod da API. */
 const SENSITIVITY_RANGE = { min: 0.1, max: 3 } as const;
 const INTENSITY_RANGE = { min: 0.1, max: 2 } as const;
+const ELEMENT_POS_RANGE = { min: 0, max: 100 } as const;
+const ELEMENT_SIZE_RANGE = { min: 5, max: 100 } as const;
 
 function inRange(value: number, range: { min: number; max: number }): boolean {
   return value >= range.min && value <= range.max;
+}
+
+/** Caixa do elemento é opcional; presente, precisa estar nos ranges. */
+function isValidElement(value: unknown): boolean {
+  if (value === undefined) return true;
+  return (
+    isRecord(value) &&
+    isFiniteNumber(value.x) &&
+    inRange(value.x, ELEMENT_POS_RANGE) &&
+    isFiniteNumber(value.y) &&
+    inRange(value.y, ELEMENT_POS_RANGE) &&
+    isFiniteNumber(value.width) &&
+    inRange(value.width, ELEMENT_SIZE_RANGE) &&
+    isFiniteNumber(value.height) &&
+    inRange(value.height, ELEMENT_SIZE_RANGE)
+  );
 }
 
 function isSceneSettings(value: unknown): value is SceneSettings {
@@ -44,7 +62,8 @@ function isSceneSettings(value: unknown): value is SceneSettings {
     inRange(value.sensitivity, SENSITIVITY_RANGE) &&
     isFiniteNumber(value.intensity) &&
     inRange(value.intensity, INTENSITY_RANGE) &&
-    typeof value.paletteId === "string"
+    typeof value.paletteId === "string" &&
+    isValidElement(value.element)
   );
 }
 

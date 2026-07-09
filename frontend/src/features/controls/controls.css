@@ -161,3 +161,48 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
 }
+
+/* --- Seletor de imagem (fundo / centro do osciloscópio) --- */
+.image-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.image-picker__thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  flex: none;
+}
+
+.image-picker__placeholder {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: var(--color-surface-muted);
+  border: 1px dashed var(--color-border-input);
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  flex: none;
+}
+
+.image-picker__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.image-picker__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hint--tight {
+  margin: calc(-1 * var(--space-2)) 0 var(--space-3);
+}

@@ -14,6 +14,10 @@ reativas ao som e exporte um vídeo `.webm` com áudio — tudo client-side.
 - **3 cenas** Canvas 2D reativas: Barras, Osciloscópio radial e Partículas
 - **4 paletas** (Eyris, Violeta, Esmeralda, Pôr do sol) + sliders de
   sensibilidade/intensidade + presets servidos pela API
+- **Imagem de fundo** (cover) atrás da visualização
+- **Caixa do elemento**: posição X/Y e largura/altura em % do vídeo
+  (layout idêntico no preview e no export) — render em camada offscreen
+- **Imagem central no osciloscópio**, recortada em círculo e pulsando com o beat
 - **Timeline**: blocos que definem qual cena aparece em cada trecho do vídeo
 - **Export de vídeo**: `canvas.captureStream(60)` + áudio pré-gain →
   MediaRecorder (WebM VP9/Opus, 720p/1080p), com progresso e download automático

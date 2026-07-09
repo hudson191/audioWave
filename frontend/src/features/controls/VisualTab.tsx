@@ -1,10 +1,16 @@
 /**
- * Aba Visual: cena (via sceneRegistry), paleta com swatches e
- * sliders de sensibilidade/intensidade.
+ * Aba Visual: cena (via sceneRegistry), paleta com swatches, sliders de
+ * sensibilidade/intensidade, caixa do elemento (posição/tamanho em % do
+ * vídeo) e imagens (fundo + centro do osciloscópio).
  */
 import { useMemo } from "react";
 import { Field, SectionTitle, Slider, cx } from "../../ui";
 import {
+  DEFAULT_ELEMENT,
+  ELEMENT_POS_MAX,
+  ELEMENT_POS_MIN,
+  ELEMENT_SIZE_MAX,
+  ELEMENT_SIZE_MIN,
   INTENSITY_MAX,
   INTENSITY_MIN,
   PALETTES,
@@ -13,6 +19,8 @@ import {
   sceneRegistry,
 } from "../../render";
 import { useAppStore } from "../../state";
+import { ImagePicker } from "./ImagePicker";
+import type { ElementBox } from "../../shared/types";
 
 const PALETTE_LABELS: Record<string, string> = {
   eyris: "Eyris",
@@ -28,8 +36,17 @@ export function VisualTab() {
   const settings = useAppStore((s) => s.settings);
   const setScene = useAppStore((s) => s.setScene);
   const setSettings = useAppStore((s) => s.setSettings);
+  const backgroundImageUrl = useAppStore((s) => s.backgroundImageUrl);
+  const centerImageUrl = useAppStore((s) => s.centerImageUrl);
+  const setBackgroundImageUrl = useAppStore((s) => s.setBackgroundImageUrl);
+  const setCenterImageUrl = useAppStore((s) => s.setCenterImageUrl);
   const scenes = useMemo(() => sceneRegistry.list(), []);
   const palettes = useMemo(() => Object.entries(PALETTES), []);
+
+  const element = settings.element ?? DEFAULT_ELEMENT;
+  const setElement = (partial: Partial<ElementBox>): void => {
+    setSettings({ element: { ...element, ...partial } });
+  };
 
   return (
     <div className="tab-panel">
@@ -110,6 +127,83 @@ export function VisualTab() {
           formatValue={(value) => value.toFixed(2)}
         />
       </Field>
+
+      <SectionTitle>Elemento</SectionTitle>
+      <p className="hint hint--tight">
+        Posição e tamanho da visualização em % do vídeo.
+      </p>
+      <Field label="Posição X" htmlFor="element-x">
+        <Slider
+          id="element-x"
+          value={element.x}
+          onChange={(value) => setElement({ x: value })}
+          min={ELEMENT_POS_MIN}
+          max={ELEMENT_POS_MAX}
+          step={1}
+          label="Posição horizontal do elemento (%)"
+          showValue
+          formatValue={(value) => `${Math.round(value)}%`}
+        />
+      </Field>
+      <Field label="Posição Y" htmlFor="element-y">
+        <Slider
+          id="element-y"
+          value={element.y}
+          onChange={(value) => setElement({ y: value })}
+          min={ELEMENT_POS_MIN}
+          max={ELEMENT_POS_MAX}
+          step={1}
+          label="Posição vertical do elemento (%)"
+          showValue
+          formatValue={(value) => `${Math.round(value)}%`}
+        />
+      </Field>
+      <Field label="Largura" htmlFor="element-width">
+        <Slider
+          id="element-width"
+          value={element.width}
+          onChange={(value) => setElement({ width: value })}
+          min={ELEMENT_SIZE_MIN}
+          max={ELEMENT_SIZE_MAX}
+          step={1}
+          label="Largura do elemento (%)"
+          showValue
+          formatValue={(value) => `${Math.round(value)}%`}
+        />
+      </Field>
+      <Field label="Altura" htmlFor="element-height">
+        <Slider
+          id="element-height"
+          value={element.height}
+          onChange={(value) => setElement({ height: value })}
+          min={ELEMENT_SIZE_MIN}
+          max={ELEMENT_SIZE_MAX}
+          step={1}
+          label="Altura do elemento (%)"
+          showValue
+          formatValue={(value) => `${Math.round(value)}%`}
+        />
+      </Field>
+
+      <SectionTitle>Imagens</SectionTitle>
+      <Field label="Imagem de fundo" htmlFor="image-background">
+        <ImagePicker
+          id="image-background"
+          label="Imagem de fundo"
+          url={backgroundImageUrl}
+          onChange={setBackgroundImageUrl}
+        />
+      </Field>
+      {sceneId === "waveform" ? (
+        <Field label="Imagem central" htmlFor="image-center">
+          <ImagePicker
+            id="image-center"
+            label="Imagem central do osciloscópio"
+            url={centerImageUrl}
+            onChange={setCenterImageUrl}
+          />
+        </Field>
+      ) : null}
     </div>
   );
 }

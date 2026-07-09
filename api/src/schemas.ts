@@ -16,6 +16,25 @@ export const MAX_TIMELINE_BLOCKS = 200;
 
 const ID_TOO_LONG = `deve ter no máximo ${MAX_ID_LENGTH} caracteres`;
 
+export const elementBoxSchema = z.object({
+  x: z
+    .number("element.x deve ser um número")
+    .min(0, "element.x deve estar entre 0 e 100")
+    .max(100, "element.x deve estar entre 0 e 100"),
+  y: z
+    .number("element.y deve ser um número")
+    .min(0, "element.y deve estar entre 0 e 100")
+    .max(100, "element.y deve estar entre 0 e 100"),
+  width: z
+    .number("element.width deve ser um número")
+    .min(5, "element.width deve estar entre 5 e 100")
+    .max(100, "element.width deve estar entre 5 e 100"),
+  height: z
+    .number("element.height deve ser um número")
+    .min(5, "element.height deve estar entre 5 e 100")
+    .max(100, "element.height deve estar entre 5 e 100"),
+});
+
 export const sceneSettingsSchema = z.object({
   sensitivity: z
     .number("sensitivity deve ser um número")
@@ -29,6 +48,7 @@ export const sceneSettingsSchema = z.object({
     .string("paletteId deve ser um texto")
     .min(1, "paletteId é obrigatório")
     .max(MAX_ID_LENGTH, `paletteId ${ID_TOO_LONG}`),
+  element: elementBoxSchema.optional(),
 });
 
 export const timelineBlockSchema = z

@@ -67,10 +67,19 @@ export interface Scene {
   dispose(): void;
 }
 
+/** Caixa do elemento em % do canvas (layout idêntico no preview e no export) */
+export interface ElementBox {
+  x: number;                          // 0–100 (canto sup. esquerdo)
+  y: number;                          // 0–100
+  width: number;                      // 5–100
+  height: number;                     // 5–100
+}
+
 export interface SceneSettings {
   sensitivity: number;                // 0.1–3, default 1
   intensity: number;                  // 0.1–2, default 1  (densidade/escala do efeito)
   paletteId: string;                  // id do preset de paleta
+  element?: ElementBox;               // ausente = tela cheia
 }
 
 export interface VisualPreset {
@@ -154,14 +163,19 @@ Beat: energia dos graves vs média móvel (janela ~1s) com threshold adaptativo 
 
 ```ts
 export class RenderEngine {
-  constructor(canvas: HTMLCanvasElement, opts: { palette: ScenePalette });
+  constructor(canvas: HTMLCanvasElement, opts: { palette: ScenePalette; createCanvas?: () => HTMLCanvasElement });
   setScene(sceneId: string): void;               // via sceneRegistry
-  setSettings(s: SceneSettings): void;
+  setSettings(s: SceneSettings): void;           // inclui element (caixa em %)
   setPalette(p: ScenePalette): void;
+  setBackgroundImage(img: HTMLImageElement | null): void; // fundo cover (null = cor da paleta)
+  setCenterImage(img: HTMLImageElement | null): void;     // repassado a cenas que suportam (waveform)
   start(getFrame: () => AudioFrame): void;       // rAF loop, cuida de DPR/resize
   stop(): void;
   dispose(): void;
 }
+// CAMADAS: a cena desenha numa camada offscreen do tamanho da caixa do
+// elemento; o engine compõe fundo (cor/imagem) → camada por frame. Cenas
+// limpam/esmaecem para TRANSPARENTE (clearRect / destination-out).
 export const sceneRegistry: { list(): {id,name}[]; create(id: string): Scene };
 export const PALETTES: Record<string, ScenePalette>; // >= 4 paletas dos tokens --chart-*
 ```

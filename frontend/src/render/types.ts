@@ -13,4 +13,10 @@ import type { Scene, SceneSettings } from "../shared/types";
 export interface RenderScene extends Scene {
   /** Recebe settings (já validados/clampados pelo engine). */
   setSettings(settings: SceneSettings): void;
+  /**
+   * Cenas que suportam imagem central (ex.: osciloscópio) implementam
+   * este método opcional; o engine repassa a imagem corrente ao criar a
+   * cena e sempre que RenderEngine.setCenterImage é chamado.
+   */
+  setCenterImage?(image: HTMLImageElement | null): void;
 }

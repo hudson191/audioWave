@@ -62,6 +62,7 @@ describe("defaults", () => {
       sensitivity: 1,
       intensity: 1,
       paletteId: "eyris",
+      element: { x: 0, y: 0, width: 100, height: 100 },
     });
     expect(s.exportStatus).toBe("idle");
     expect(s.status).toBe("idle");
@@ -90,7 +91,12 @@ describe("ações síncronas", () => {
     const before = useAppStore.getState().settings;
     useAppStore.getState().setSettings({ sensitivity: 2.5 });
     const after = useAppStore.getState().settings;
-    expect(after).toEqual({ sensitivity: 2.5, intensity: 1, paletteId: "eyris" });
+    expect(after).toEqual({
+      sensitivity: 2.5,
+      intensity: 1,
+      paletteId: "eyris",
+      element: { x: 0, y: 0, width: 100, height: 100 },
+    });
     expect(before.sensitivity).toBe(1);
     expect(after).not.toBe(before);
   });
@@ -99,7 +105,11 @@ describe("ações síncronas", () => {
     useAppStore.getState().applyPreset(preset);
     const s = useAppStore.getState();
     expect(s.sceneId).toBe("particles");
-    expect(s.settings).toEqual(preset.settings);
+    // preset sem element: preserva a caixa do elemento corrente (layout)
+    expect(s.settings).toEqual({
+      ...preset.settings,
+      element: { x: 0, y: 0, width: 100, height: 100 },
+    });
     expect(s.settings).not.toBe(preset.settings);
   });
 
@@ -341,5 +351,41 @@ describe("ações async", () => {
     );
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
+  });
+});
+
+describe("imagens (URLs de sessão) e caixa do elemento", () => {
+  it("setBackgroundImageUrl / setCenterImageUrl definem e limpam", () => {
+    useAppStore.getState().setBackgroundImageUrl("blob:bg");
+    useAppStore.getState().setCenterImageUrl("blob:center");
+    expect(useAppStore.getState().backgroundImageUrl).toBe("blob:bg");
+    expect(useAppStore.getState().centerImageUrl).toBe("blob:center");
+    useAppStore.getState().setBackgroundImageUrl(null);
+    useAppStore.getState().setCenterImageUrl(null);
+    expect(useAppStore.getState().backgroundImageUrl).toBeNull();
+    expect(useAppStore.getState().centerImageUrl).toBeNull();
+  });
+
+  it("applyPreset preserva a caixa do elemento customizada (layout do usuário)", () => {
+    const element = { x: 25, y: 10, width: 50, height: 40 };
+    useAppStore.getState().setSettings({ element });
+    useAppStore.getState().applyPreset({
+      id: "p1",
+      name: "Preset",
+      sceneId: "waveform",
+      settings: { sensitivity: 2, intensity: 1.5, paletteId: "violet" },
+    });
+    const s = useAppStore.getState();
+    expect(s.settings.sensitivity).toBe(2);
+    expect(s.settings.element).toEqual(element);
+  });
+
+  it("setSettings mescla element sem perder os demais campos", () => {
+    useAppStore.getState().setSettings({
+      element: { x: 5, y: 5, width: 90, height: 90 },
+    });
+    const s = useAppStore.getState().settings;
+    expect(s.sensitivity).toBe(1);
+    expect(s.element).toEqual({ x: 5, y: 5, width: 90, height: 90 });
   });
 });

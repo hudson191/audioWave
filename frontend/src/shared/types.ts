@@ -55,6 +55,18 @@ export interface Scene {
   dispose(): void;
 }
 
+/**
+ * Caixa do elemento visual em PORCENTAGEM do canvas (0-100) — assim o layout
+ * é idêntico no preview e no vídeo exportado, independente da resolução.
+ * x/y = canto superior esquerdo; width/height = dimensões (5-100).
+ */
+export interface ElementBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface SceneSettings {
   /** 0.1–3, default 1 */
   sensitivity: number;
@@ -62,6 +74,8 @@ export interface SceneSettings {
   intensity: number;
   /** id do preset de paleta */
   paletteId: string;
+  /** posição/tamanho do elemento em % do canvas; ausente = tela cheia */
+  element?: ElementBox;
 }
 
 export interface VisualPreset {

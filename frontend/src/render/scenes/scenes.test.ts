@@ -88,3 +88,21 @@ describe("ParticlesScene", () => {
     scene.dispose();
   });
 });
+
+describe("WaveformScene — imagem central", () => {
+  it("desenha a imagem recortada em círculo sem lançar (e limpa no dispose)", () => {
+    const scene = new WaveformScene();
+    const sc = createMockSceneContext();
+    const image = { naturalWidth: 128, naturalHeight: 64 } as HTMLImageElement;
+    expect(() => {
+      scene.setCenterImage(image);
+      scene.init(sc);
+      scene.update(createMockFrame({ beat: true }), 1 / 60);
+      scene.setCenterImage(null);
+      scene.update(createMockFrame(), 1 / 60);
+      scene.dispose();
+    }).not.toThrow();
+    expect(sc.ctx.clip).toHaveBeenCalled();
+    expect(sc.ctx.drawImage).toHaveBeenCalled();
+  });
+});

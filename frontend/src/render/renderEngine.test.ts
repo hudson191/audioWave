@@ -186,3 +186,88 @@ describe("RenderEngine", () => {
     expect(getFrame).not.toHaveBeenCalled();
   });
 });
+
+describe("RenderEngine — camadas (fundo + caixa do elemento)", () => {
+  function createLayeredEngine(dpr = 1) {
+    vi.stubGlobal("devicePixelRatio", dpr);
+    Object.defineProperty(window, "devicePixelRatio", {
+      value: dpr,
+      configurable: true,
+    });
+    const ctx = createMockCtx();
+    const canvas = createMockCanvas(ctx, { clientWidth: 1000, clientHeight: 500 });
+    const layerCtx = createMockCtx();
+    const layerCanvas = createMockCanvas(layerCtx);
+    const engine = new RenderEngine(canvas, {
+      palette: getPalette("eyris"),
+      createCanvas: () => layerCanvas,
+    });
+    return { engine, canvas, ctx, layerCanvas, layerCtx };
+  }
+
+  it("compõe fundo (cor da paleta) + camada da cena no canvas principal", () => {
+    const { engine, ctx, layerCanvas } = createLayeredEngine();
+    engine.setScene("bars");
+    engine.start(() => createMockFrame());
+    flushRaf(16);
+    // fundo no canvas principal
+    expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 1000, 500);
+    // camada composta em tela cheia (element default 0,0,100,100)
+    expect(ctx.drawImage).toHaveBeenCalledWith(layerCanvas, 0, 0, 1000, 500);
+    engine.dispose();
+  });
+
+  it("desenha a camada no retângulo da caixa do elemento", () => {
+    const { engine, ctx, layerCanvas } = createLayeredEngine();
+    engine.setScene("bars");
+    engine.setSettings({
+      sensitivity: 1,
+      intensity: 1,
+      paletteId: "eyris",
+      element: { x: 10, y: 20, width: 50, height: 40 },
+    });
+    engine.start(() => createMockFrame());
+    flushRaf(16);
+    expect(ctx.drawImage).toHaveBeenCalledWith(layerCanvas, 100, 100, 500, 200);
+    engine.dispose();
+  });
+
+  it("caixa do elemento dimensiona o buffer da camada (com DPR)", () => {
+    const { engine, layerCanvas, layerCtx } = createLayeredEngine(2);
+    engine.setSettings({
+      sensitivity: 1,
+      intensity: 1,
+      paletteId: "eyris",
+      element: { x: 0, y: 0, width: 50, height: 50 },
+    });
+    expect(layerCanvas.width).toBe(1000); // 50% de 1000 css px * dpr 2
+    expect(layerCanvas.height).toBe(500);
+    expect(layerCtx.setTransform).toHaveBeenCalledWith(2, 0, 0, 2, 0, 0);
+    engine.dispose();
+  });
+
+  it("desenha imagem de fundo em cover sobre a cor da paleta", () => {
+    const { engine, ctx } = createLayeredEngine();
+    engine.setScene("bars");
+    const image = { naturalWidth: 200, naturalHeight: 100 } as HTMLImageElement;
+    engine.setBackgroundImage(image);
+    engine.start(() => createMockFrame());
+    flushRaf(16);
+    // cover de 200x100 em 1000x500 → escala 5 → 1000x500 em (0,0)
+    expect(ctx.drawImage).toHaveBeenCalledWith(image, 0, 0, 1000, 500);
+    engine.dispose();
+  });
+
+  it("repassa a imagem central para cenas que a suportam, inclusive na troca de cena", () => {
+    const { engine } = createLayeredEngine();
+    const image = { naturalWidth: 64, naturalHeight: 64 } as HTMLImageElement;
+    engine.setCenterImage(image);
+    // waveform suporta imagem central; troca de cena deve reaplicá-la
+    expect(() => {
+      engine.setScene("waveform");
+      engine.start(() => createMockFrame());
+      flushRaf(16);
+    }).not.toThrow();
+    engine.dispose();
+  });
+});

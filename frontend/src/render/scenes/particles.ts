@@ -43,8 +43,7 @@ export class ParticlesScene implements RenderScene {
     this.particles = [];
     this.emitAccumulator = 0;
     sc.ctx.globalCompositeOperation = "source-over";
-    sc.ctx.fillStyle = sc.palette.background;
-    sc.ctx.fillRect(0, 0, sc.width, sc.height);
+    sc.ctx.clearRect(0, 0, sc.width, sc.height);
   }
 
   resize(sc: SceneContext): void {
@@ -112,10 +111,12 @@ export class ParticlesScene implements RenderScene {
 
   private draw(sc: SceneContext, beat: boolean): void {
     const { ctx, width, height, palette } = sc;
-    ctx.globalCompositeOperation = "source-over";
+    // esmaece a trilha para TRANSPARENTE (o fundo é composto pelo engine)
+    ctx.globalCompositeOperation = "destination-out";
     ctx.shadowBlur = 0;
-    ctx.fillStyle = hexToRgba(palette.background, TRAIL_ALPHA);
+    ctx.fillStyle = `rgba(0, 0, 0, ${TRAIL_ALPHA})`;
     ctx.fillRect(0, 0, width, height);
+    ctx.globalCompositeOperation = "source-over";
 
     ctx.globalCompositeOperation = "lighter";
     if (beat) {

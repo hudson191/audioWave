@@ -24,6 +24,8 @@ export function VisualizerCanvas() {
   const sceneId = useAppStore((s) => s.sceneId);
   const settings = useAppStore((s) => s.settings);
   const timeline = useAppStore((s) => s.timeline);
+  const backgroundImageUrl = useAppStore((s) => s.backgroundImageUrl);
+  const centerImageUrl = useAppStore((s) => s.centerImageUrl);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -71,6 +73,20 @@ export function VisualizerCanvas() {
     engine.setSettings(settings);
     engine.setPalette(getPalette(settings.paletteId));
   }, [settings]);
+
+  // store → engine: imagem de fundo (object URL de sessão)
+  useEffect(() => {
+    return syncEngineImage(backgroundImageUrl, (image) =>
+      renderRef.current?.setBackgroundImage(image),
+    );
+  }, [backgroundImageUrl]);
+
+  // store → engine: imagem central (cenas que suportam, ex.: osciloscópio)
+  useEffect(() => {
+    return syncEngineImage(centerImageUrl, (image) =>
+      renderRef.current?.setCenterImage(image),
+    );
+  }, [centerImageUrl]);
 
   // store → engine: cena base / timeline (reavalia imediatamente)
   useEffect(() => {
@@ -129,4 +145,35 @@ export function VisualizerCanvas() {
       />
     </div>
   );
+}
+
+/**
+ * Carrega a imagem do URL e a entrega ao engine via `apply`; URL null limpa.
+ * Retorna cleanup que cancela um load pendente (evita aplicar imagem obsoleta).
+ */
+function syncEngineImage(
+  url: string | null,
+  apply: (image: HTMLImageElement | null) => void,
+): () => void {
+  if (!url) {
+    apply(null);
+    return () => {};
+  }
+  let cancelled = false;
+  const image = new Image();
+  image.onload = () => {
+    if (!cancelled) {
+      apply(image);
+    }
+  };
+  image.onerror = () => {
+    if (!cancelled) {
+      console.error("[visualizer] falha ao carregar imagem:", url);
+      apply(null);
+    }
+  };
+  image.src = url;
+  return () => {
+    cancelled = true;
+  };
 }

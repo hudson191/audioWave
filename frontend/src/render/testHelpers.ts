@@ -37,6 +37,8 @@ export function createMockCtx(): CanvasRenderingContext2D {
     rotate: vi.fn(),
     scale: vi.fn(),
     setTransform: vi.fn(),
+    clip: vi.fn(),
+    drawImage: vi.fn(),
     createLinearGradient: vi.fn(() => gradient),
     createRadialGradient: vi.fn(() => gradient),
   };

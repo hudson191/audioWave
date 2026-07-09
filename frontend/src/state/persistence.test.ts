@@ -224,3 +224,56 @@ describe("initPersistence", () => {
     expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
   });
 });
+
+describe("settings.element persistido", () => {
+  const base = {
+    version: 1,
+    sceneId: "bars",
+    settings: { sensitivity: 1, intensity: 1, paletteId: "eyris" },
+    timeline: [],
+    volume: 0.8,
+  };
+
+  it("aceita payload sem element (retrocompatível)", () => {
+    expect(parsePersisted(JSON.stringify(base))).not.toBeNull();
+  });
+
+  it("aceita element válido e o preserva", () => {
+    const payload = {
+      ...base,
+      settings: {
+        ...base.settings,
+        element: { x: 10, y: 20, width: 50, height: 40 },
+      },
+    };
+    const parsed = parsePersisted(JSON.stringify(payload));
+    expect(parsed?.settings.element).toEqual({
+      x: 10,
+      y: 20,
+      width: 50,
+      height: 40,
+    });
+  });
+
+  it("rejeita element fora dos ranges do contrato", () => {
+    const payload = {
+      ...base,
+      settings: {
+        ...base.settings,
+        element: { x: -5, y: 0, width: 50, height: 50 },
+      },
+    };
+    expect(parsePersisted(JSON.stringify(payload))).toBeNull();
+  });
+
+  it("rejeita element com tamanho abaixo do mínimo", () => {
+    const payload = {
+      ...base,
+      settings: {
+        ...base.settings,
+        element: { x: 0, y: 0, width: 1, height: 50 },
+      },
+    };
+    expect(parsePersisted(JSON.stringify(payload))).toBeNull();
+  });
+});

@@ -23,6 +23,7 @@ export const DEFAULT_SETTINGS: SceneSettings = {
   sensitivity: 1,
   intensity: 1,
   paletteId: "eyris",
+  element: { x: 0, y: 0, width: 100, height: 100 },
 };
 
 export interface AppState {
@@ -44,6 +45,9 @@ export interface AppState {
   // export
   exportStatus: ExportStatus;
   exportProgress: number; // 0-1
+  // imagens (object URLs de sessão — não persistidas nem salvas no projeto)
+  backgroundImageUrl: string | null;
+  centerImageUrl: string | null;
   // erros de UI (mensagem amigável pt-BR)
   error: string | null;
 
@@ -65,6 +69,8 @@ export interface AppState {
   removeTimelineBlock: (id: string) => void;
   setExportStatus: (status: ExportStatus) => void;
   setExportProgress: (progress: number) => void;
+  setBackgroundImageUrl: (url: string | null) => void;
+  setCenterImageUrl: (url: string | null) => void;
   clearError: () => void;
 
   // ações async
@@ -124,6 +130,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
   projects: [],
   exportStatus: "idle",
   exportProgress: 0,
+  backgroundImageUrl: null,
+  centerImageUrl: null,
   error: null,
 
   setStatus: (status) => set({ status }),
@@ -145,8 +153,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
   setSettings: (partial) =>
     set((state) => ({ settings: { ...state.settings, ...partial } })),
 
+  // Preset define o LOOK (cena/paleta/sensibilidade); a caixa do elemento é
+  // layout do usuário e é preservada quando o preset não define uma.
   applyPreset: (preset) =>
-    set({ sceneId: preset.sceneId, settings: { ...preset.settings } }),
+    set((state) => ({
+      sceneId: preset.sceneId,
+      settings: {
+        ...preset.settings,
+        element: preset.settings.element ?? state.settings.element,
+      },
+    })),
 
   setTimeline: (blocks) => set({ timeline: sortBlocks(blocks) }),
 
@@ -183,6 +199,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
   setExportProgress: (progress) =>
     set({ exportProgress: clamp(progress, 0, 1) }),
+
+  setBackgroundImageUrl: (url) => set({ backgroundImageUrl: url }),
+
+  setCenterImageUrl: (url) => set({ centerImageUrl: url }),
 
   clearError: () => set({ error: null }),
 

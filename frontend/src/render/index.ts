@@ -11,10 +11,16 @@ export {
 } from "./palettes";
 export {
   DEFAULT_SETTINGS,
+  DEFAULT_ELEMENT,
   clampSettings,
+  clampElementBox,
   SENSITIVITY_MIN,
   SENSITIVITY_MAX,
   INTENSITY_MIN,
   INTENSITY_MAX,
+  ELEMENT_POS_MIN,
+  ELEMENT_POS_MAX,
+  ELEMENT_SIZE_MIN,
+  ELEMENT_SIZE_MAX,
 } from "./settings";
 export type { RenderScene } from "./types";

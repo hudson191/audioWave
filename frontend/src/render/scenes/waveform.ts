@@ -1,7 +1,8 @@
 /**
  * Cena "waveform": osciloscópio radial — círculo central que pulsa com
  * level/beat e a forma de onda desenhada em anel ao redor, com trilha
- * que esmaece (fade com alpha baixo).
+ * que esmaece (fade para transparente; o fundo é do RenderEngine).
+ * Suporta imagem central opcional, recortada em círculo e pulsando junto.
  */
 import type { AudioFrame, SceneContext, SceneSettings } from "../../shared/types";
 import type { RenderScene } from "../types";
@@ -19,6 +20,7 @@ export class WaveformScene implements RenderScene {
 
   private sc: SceneContext | null = null;
   private settings: SceneSettings = { ...DEFAULT_SETTINGS };
+  private centerImage: HTMLImageElement | null = null;
   private smoothLevel = 0;
   private beatPulse = 0;
 
@@ -27,8 +29,7 @@ export class WaveformScene implements RenderScene {
     this.smoothLevel = 0;
     this.beatPulse = 0;
     sc.ctx.globalCompositeOperation = "source-over";
-    sc.ctx.fillStyle = sc.palette.background;
-    sc.ctx.fillRect(0, 0, sc.width, sc.height);
+    sc.ctx.clearRect(0, 0, sc.width, sc.height);
   }
 
   resize(sc: SceneContext): void {
@@ -39,8 +40,13 @@ export class WaveformScene implements RenderScene {
     this.settings = { ...settings };
   }
 
+  setCenterImage(image: HTMLImageElement | null): void {
+    this.centerImage = image;
+  }
+
   dispose(): void {
     this.sc = null;
+    this.centerImage = null;
   }
 
   update(frame: AudioFrame, dt: number): void {
@@ -65,11 +71,13 @@ export class WaveformScene implements RenderScene {
   }
 
   private fadeTrail(sc: SceneContext): void {
-    const { ctx, width, height, palette } = sc;
-    ctx.globalCompositeOperation = "source-over";
+    const { ctx, width, height } = sc;
+    // esmaece a trilha para TRANSPARENTE (o fundo é composto pelo engine)
+    ctx.globalCompositeOperation = "destination-out";
     ctx.shadowBlur = 0;
-    ctx.fillStyle = hexToRgba(palette.background, TRAIL_ALPHA);
+    ctx.fillStyle = `rgba(0, 0, 0, ${TRAIL_ALPHA})`;
     ctx.fillRect(0, 0, width, height);
+    ctx.globalCompositeOperation = "source-over";
   }
 
   private drawCenter(sc: SceneContext, radius: number): void {
@@ -85,10 +93,38 @@ export class WaveformScene implements RenderScene {
     ctx.beginPath();
     ctx.arc(cx, cy, radius * 1.6, 0, TWO_PI);
     ctx.fill();
+    if (this.centerImage) {
+      this.drawCenterImage(sc, this.centerImage, radius * 1.15);
+      return;
+    }
     ctx.fillStyle = hexToRgba(palette.primary, 0.9);
     ctx.beginPath();
     ctx.arc(cx, cy, radius * 0.5, 0, TWO_PI);
     ctx.fill();
+  }
+
+  /** Imagem central recortada em círculo (cover), pulsando com o raio. */
+  private drawCenterImage(
+    sc: SceneContext,
+    image: HTMLImageElement,
+    radius: number,
+  ): void {
+    const iw = image.naturalWidth || image.width;
+    const ih = image.naturalHeight || image.height;
+    if (!iw || !ih || radius <= 0) return;
+    const { ctx, width, height } = sc;
+    const cx = width / 2;
+    const cy = height / 2;
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, TWO_PI);
+    ctx.clip();
+    const scale = Math.max((radius * 2) / iw, (radius * 2) / ih);
+    const dw = iw * scale;
+    const dh = ih * scale;
+    ctx.drawImage(image, cx - dw / 2, cy - dh / 2, dw, dh);
+    ctx.restore();
   }
 
   private drawRing(
