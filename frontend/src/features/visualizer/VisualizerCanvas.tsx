@@ -8,7 +8,7 @@
  *   via frameEvents (sem re-render por frame).
  */
 import { useEffect, useRef } from "react";
-import { RenderEngine, getPalette } from "../../render";
+import { RenderEngine, resolvePalette } from "../../render";
 import { sceneIdAt, useAppStore } from "../../state";
 import { useEngines } from "../engine/EngineContext";
 import { dispatchFrameSignal } from "./frameEvents";
@@ -35,7 +35,7 @@ export function VisualizerCanvas() {
     let engine: RenderEngine;
     try {
       engine = new RenderEngine(canvas, {
-        palette: getPalette(useAppStore.getState().settings.paletteId),
+        palette: resolvePalette(useAppStore.getState().settings),
       });
     } catch (error: unknown) {
       console.error("[visualizer] falha ao iniciar o render:", error);
@@ -71,7 +71,7 @@ export function VisualizerCanvas() {
       return;
     }
     engine.setSettings(settings);
-    engine.setPalette(getPalette(settings.paletteId));
+    engine.setPalette(resolvePalette(settings));
   }, [settings]);
 
   // store → engine: imagem de fundo (object URL de sessão)
@@ -137,12 +137,14 @@ export function VisualizerCanvas() {
 
   return (
     <div className="visualizer">
-      <canvas
-        ref={canvasRef}
-        className="visualizer__canvas"
-        role="img"
-        aria-label="Visualização reativa da música"
-      />
+      <div className="visualizer__frame">
+        <canvas
+          ref={canvasRef}
+          className="visualizer__canvas"
+          role="img"
+          aria-label="Visualização reativa da música"
+        />
+      </div>
     </div>
   );
 }

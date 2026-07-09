@@ -68,10 +68,20 @@
 }
 
 /* --- Visualizador (área central) --- */
+/* Mantém sempre a proporção 16:9 (igual ao vídeo exportado): o quadro é o
+   maior 16:9 que cabe no espaço disponível, centralizado (letterbox). */
 .visualizer {
-  display: flex;
+  container-type: size;
+  display: grid;
+  place-items: center;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
+}
+
+.visualizer__frame {
+  aspect-ratio: 16 / 9;
+  width: min(100cqw, calc(100cqh * 16 / 9));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: #0a0a0a;

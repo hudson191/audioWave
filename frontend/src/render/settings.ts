@@ -15,6 +15,24 @@ export const ELEMENT_POS_MAX = 100;
 export const ELEMENT_SIZE_MIN = 5;
 export const ELEMENT_SIZE_MAX = 100;
 
+/** Máximo de cores na paleta customizada. */
+export const MAX_CUSTOM_COLORS = 6;
+/** Cor hex válida: #RGB ou #RRGGBB. */
+export const HEX_COLOR_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+/** Filtra cores hex válidas e limita a quantidade. Retorna NOVO array. */
+export function sanitizeCustomColors(
+  colors: readonly string[] | undefined,
+): string[] | undefined {
+  if (!colors) {
+    return undefined;
+  }
+  const valid = colors
+    .filter((c): c is string => typeof c === "string" && HEX_COLOR_RE.test(c))
+    .slice(0, MAX_CUSTOM_COLORS);
+  return valid;
+}
+
 export const DEFAULT_ELEMENT: ElementBox = {
   x: 0,
   y: 0,
@@ -73,5 +91,12 @@ export function clampSettings(input: SceneSettings): SceneSettings {
     typeof input.paletteId === "string" && input.paletteId.length > 0
       ? input.paletteId
       : DEFAULT_SETTINGS.paletteId;
-  return { sensitivity, intensity, paletteId, element: clampElementBox(input.element) };
+  const customColors = sanitizeCustomColors(input.customColors);
+  return {
+    sensitivity,
+    intensity,
+    paletteId,
+    element: clampElementBox(input.element),
+    ...(customColors ? { customColors } : {}),
+  };
 }

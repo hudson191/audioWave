@@ -55,6 +55,17 @@ function isValidElement(value: unknown): boolean {
   );
 }
 
+const HEX_COLOR_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+/** customColors é opcional; presente, deve ser lista de cores hex válidas. */
+function isValidCustomColors(value: unknown): boolean {
+  if (value === undefined) return true;
+  return (
+    Array.isArray(value) &&
+    value.every((c) => typeof c === "string" && HEX_COLOR_RE.test(c))
+  );
+}
+
 function isSceneSettings(value: unknown): value is SceneSettings {
   return (
     isRecord(value) &&
@@ -63,7 +74,8 @@ function isSceneSettings(value: unknown): value is SceneSettings {
     isFiniteNumber(value.intensity) &&
     inRange(value.intensity, INTENSITY_RANGE) &&
     typeof value.paletteId === "string" &&
-    isValidElement(value.element)
+    isValidElement(value.element) &&
+    isValidCustomColors(value.customColors)
   );
 }
 

@@ -211,3 +211,28 @@ describe("elementBoxSchema (settings.element)", () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe("customColors (settings)", () => {
+  const withColors = (customColors: unknown) => ({
+    ...validInput,
+    settings: { ...validInput.settings, customColors },
+  });
+
+  it("aceita ausência de customColors", () => {
+    expect(projectInputSchema.safeParse(validInput).success).toBe(true);
+  });
+
+  it("aceita cores hex válidas", () => {
+    const r = projectInputSchema.safeParse(withColors(["#fff", "#286CF0"]));
+    expect(r.success).toBe(true);
+  });
+
+  it("rejeita cor não-hex", () => {
+    expect(projectInputSchema.safeParse(withColors(["azul"])).success).toBe(false);
+  });
+
+  it("rejeita mais de 6 cores", () => {
+    const many = Array.from({ length: 7 }, () => "#000000");
+    expect(projectInputSchema.safeParse(withColors(many)).success).toBe(false);
+  });
+});

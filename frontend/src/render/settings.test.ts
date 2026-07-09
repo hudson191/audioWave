@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampElementBox, clampSettings, DEFAULT_SETTINGS } from "./settings";
+import { clampElementBox, clampSettings, DEFAULT_SETTINGS, sanitizeCustomColors } from "./settings";
 
 describe("DEFAULT_SETTINGS", () => {
   it("tem os defaults do contrato", () => {
@@ -91,5 +91,39 @@ describe("clampElementBox", () => {
         element: custom,
       }).element,
     ).toEqual(custom);
+  });
+});
+
+describe("sanitizeCustomColors / clampSettings custom", () => {
+  it("mantém hex válidos e descarta inválidos", () => {
+    expect(
+      sanitizeCustomColors(["#fff", "#286CF0", "azul", "#12345", "#abcdef"]),
+    ).toEqual(["#fff", "#286CF0", "#abcdef"]);
+  });
+
+  it("limita a 6 cores", () => {
+    const many = Array.from({ length: 10 }, () => "#000000");
+    expect(sanitizeCustomColors(many)).toHaveLength(6);
+  });
+
+  it("undefined permanece undefined", () => {
+    expect(sanitizeCustomColors(undefined)).toBeUndefined();
+  });
+
+  it("clampSettings sanitiza customColors e omite quando ausente", () => {
+    const withColors = clampSettings({
+      sensitivity: 1,
+      intensity: 1,
+      paletteId: "custom",
+      customColors: ["#ff0000", "nope"],
+    });
+    expect(withColors.customColors).toEqual(["#ff0000"]);
+
+    const without = clampSettings({
+      sensitivity: 1,
+      intensity: 1,
+      paletteId: "eyris",
+    });
+    expect("customColors" in without).toBe(false);
   });
 });

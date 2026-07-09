@@ -32,6 +32,8 @@ export interface SceneSettings {
    * `.optional()`).
    */
   element?: ElementBox | undefined;
+  /** cores hex da paleta customizada (paletteId === "custom") */
+  customColors?: string[] | undefined;
 }
 
 export interface VisualPreset {

@@ -35,6 +35,10 @@ export const elementBoxSchema = z.object({
     .max(100, "element.height deve estar entre 5 e 100"),
 });
 
+/** Máximo de cores na paleta customizada. */
+export const MAX_CUSTOM_COLORS = 6;
+const HEX_COLOR_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
 export const sceneSettingsSchema = z.object({
   sensitivity: z
     .number("sensitivity deve ser um número")
@@ -49,6 +53,14 @@ export const sceneSettingsSchema = z.object({
     .min(1, "paletteId é obrigatório")
     .max(MAX_ID_LENGTH, `paletteId ${ID_TOO_LONG}`),
   element: elementBoxSchema.optional(),
+  customColors: z
+    .array(
+      z
+        .string("customColors deve conter cores em texto")
+        .regex(HEX_COLOR_RE, "cor deve ser hex (#RGB ou #RRGGBB)"),
+    )
+    .max(MAX_CUSTOM_COLORS, `customColors deve ter no máximo ${MAX_CUSTOM_COLORS} cores`)
+    .optional(),
 });
 
 export const timelineBlockSchema = z

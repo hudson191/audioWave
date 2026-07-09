@@ -9,7 +9,7 @@
 import { ArrayBufferTarget, Muxer } from "mp4-muxer";
 import type { SceneSettings, TimelineBlock } from "../../shared/types";
 import { createOfflineFrameSource, extractMono } from "../../audio";
-import { OfflineRenderer, getPalette } from "../../render";
+import { OfflineRenderer, resolvePalette } from "../../render";
 import { sceneIdAt } from "../../state";
 import {
   computeVideoBitrate,
@@ -194,7 +194,7 @@ export async function exportWithWebCodecs(
   const renderer = new OfflineRenderer({
     width,
     height,
-    palette: getPalette(params.settings.paletteId),
+    palette: resolvePalette(params.settings),
     settings: params.settings,
     createCanvas,
   });

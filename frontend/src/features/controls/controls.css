@@ -206,3 +206,70 @@
 .hint--tight {
   margin: calc(-1 * var(--space-2)) 0 var(--space-3);
 }
+
+/* --- Editor de paleta customizada --- */
+.custom-colors {
+  margin-top: var(--space-3);
+}
+
+.custom-colors__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.custom-colors__item {
+  position: relative;
+  width: 40px;
+  height: 40px;
+}
+
+.custom-colors__picker {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+}
+
+.custom-colors__remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.custom-colors__remove:hover {
+  color: var(--color-danger);
+}
+
+.custom-colors__add {
+  width: 40px;
+  height: 40px;
+  border: 1px dashed var(--color-border-input);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.custom-colors__add:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}

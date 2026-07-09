@@ -78,8 +78,9 @@ export interface ElementBox {
 export interface SceneSettings {
   sensitivity: number;                // 0.1–3, default 1
   intensity: number;                  // 0.1–2, default 1  (densidade/escala do efeito)
-  paletteId: string;                  // id do preset de paleta
+  paletteId: string;                  // id do preset de paleta ("custom" usa customColors)
   element?: ElementBox;               // ausente = tela cheia
+  customColors?: string[];            // cores hex (≤6) da paleta "custom"
 }
 
 export interface VisualPreset {
@@ -182,6 +183,7 @@ export class RenderEngine {
 // limpam/esmaecem para TRANSPARENTE (clearRect / destination-out).
 export const sceneRegistry: { list(): {id,name}[]; create(id: string): Scene };
 export const PALETTES: Record<string, ScenePalette>; // >= 4 paletas dos tokens --chart-*
+export function resolvePalette(settings): ScenePalette; // "custom" → buildCustomPalette(customColors), senão getPalette(paletteId)
 ```
 
 Cenas obrigatórias (mínimo): `bars` (barras de frequência), `waveform` (osciloscópio radial ou linear), `particles` (partículas reativas ao grave com pulso no beat). Canvas 2D, 60fps, additive glow onde couber. `sensitivity` multiplica a resposta ao áudio; `intensity` escala densidade/tamanho.

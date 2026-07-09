@@ -6,6 +6,8 @@
 import { useMemo } from "react";
 import { Field, SectionTitle, Slider, cx } from "../../ui";
 import {
+  CUSTOM_PALETTE_ID,
+  DEFAULT_CUSTOM_COLORS,
   DEFAULT_ELEMENT,
   ELEMENT_POS_MAX,
   ELEMENT_POS_MIN,
@@ -13,6 +15,7 @@ import {
   ELEMENT_SIZE_MIN,
   INTENSITY_MAX,
   INTENSITY_MIN,
+  MAX_CUSTOM_COLORS,
   PALETTES,
   SENSITIVITY_MAX,
   SENSITIVITY_MIN,
@@ -30,6 +33,8 @@ const PALETTE_LABELS: Record<string, string> = {
 };
 
 const SLIDER_STEP = 0.05;
+/** Swatches mostrados no card "Custom" quando ainda não há cores próprias. */
+const CUSTOM_CARD_SWATCHES = [...DEFAULT_CUSTOM_COLORS];
 
 export function VisualTab() {
   const sceneId = useAppStore((s) => s.sceneId);
@@ -46,6 +51,38 @@ export function VisualTab() {
   const element = settings.element ?? DEFAULT_ELEMENT;
   const setElement = (partial: Partial<ElementBox>): void => {
     setSettings({ element: { ...element, ...partial } });
+  };
+
+  const isCustom = settings.paletteId === CUSTOM_PALETTE_ID;
+  const customColors = settings.customColors ?? [...DEFAULT_CUSTOM_COLORS];
+
+  const selectCustom = (): void => {
+    setSettings({
+      paletteId: CUSTOM_PALETTE_ID,
+      customColors: settings.customColors ?? [...DEFAULT_CUSTOM_COLORS],
+    });
+  };
+
+  const setCustomColorAt = (index: number, color: string): void => {
+    const next = [...customColors];
+    next[index] = color;
+    setSettings({ paletteId: CUSTOM_PALETTE_ID, customColors: next });
+  };
+
+  const addCustomColor = (): void => {
+    if (customColors.length >= MAX_CUSTOM_COLORS) return;
+    setSettings({
+      paletteId: CUSTOM_PALETTE_ID,
+      customColors: [...customColors, "#FFFFFF"],
+    });
+  };
+
+  const removeCustomColor = (index: number): void => {
+    if (customColors.length <= 1) return;
+    setSettings({
+      paletteId: CUSTOM_PALETTE_ID,
+      customColors: customColors.filter((_, i) => i !== index),
+    });
   };
 
   return (
@@ -98,7 +135,64 @@ export function VisualTab() {
             </span>
           </button>
         ))}
+        <button
+          type="button"
+          role="radio"
+          aria-checked={isCustom}
+          aria-label="Paleta customizada"
+          className={cx("palette-card", isCustom && "palette-card--active")}
+          onClick={selectCustom}
+        >
+          <span className="palette-card__swatches" aria-hidden="true">
+            {(isCustom ? customColors : CUSTOM_CARD_SWATCHES).map((color, i) => (
+              <span
+                key={`${color}-${i}`}
+                className="palette-card__swatch"
+                style={{ background: color }}
+              />
+            ))}
+          </span>
+          <span className="palette-card__name">Custom</span>
+        </button>
       </div>
+
+      {isCustom ? (
+        <div className="custom-colors">
+          <div className="custom-colors__list">
+            {customColors.map((color, i) => (
+              <div className="custom-colors__item" key={i}>
+                <input
+                  type="color"
+                  className="custom-colors__picker"
+                  value={color}
+                  aria-label={`Cor ${i + 1} da paleta customizada`}
+                  onChange={(e) => setCustomColorAt(i, e.target.value)}
+                />
+                {customColors.length > 1 ? (
+                  <button
+                    type="button"
+                    className="custom-colors__remove"
+                    aria-label={`Remover cor ${i + 1}`}
+                    onClick={() => removeCustomColor(i)}
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </div>
+            ))}
+            {customColors.length < MAX_CUSTOM_COLORS ? (
+              <button
+                type="button"
+                className="custom-colors__add"
+                aria-label="Adicionar cor"
+                onClick={addCustomColor}
+              >
+                +
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       <SectionTitle>Ajustes</SectionTitle>
       <Field label="Sensibilidade" htmlFor="visual-sensitivity">

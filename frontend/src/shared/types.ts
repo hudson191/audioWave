@@ -72,10 +72,12 @@ export interface SceneSettings {
   sensitivity: number;
   /** 0.1–2, default 1 (densidade/escala do efeito) */
   intensity: number;
-  /** id do preset de paleta */
+  /** id do preset de paleta ("custom" usa customColors) */
   paletteId: string;
   /** posição/tamanho do elemento em % do canvas; ausente = tela cheia */
   element?: ElementBox;
+  /** cores hex da paleta customizada (usadas quando paletteId === "custom") */
+  customColors?: string[];
 }
 
 export interface VisualPreset {
