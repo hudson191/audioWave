@@ -55,6 +55,20 @@ CONTRACTS.md  contratos entre módulos
 
 ## Rodando
 
+### Docker (produção — sobe tudo)
+
+```bash
+docker compose up --build          # http://localhost:8080
+# porta em uso? use outra:
+WEB_PORT=9000 docker compose up --build
+```
+
+O `nginx` serve o frontend estático e faz proxy de `/api` para o container da
+API (mesma origem, sem CORS). A API não expõe porta ao host (fica privada na
+rede do compose); os projetos persistem no volume `audiowave-data`.
+
+### Dev (hot reload)
+
 ```bash
 # API (terminal 1)
 cd api && npm install && npm run dev        # http://localhost:3001

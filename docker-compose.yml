@@ -1,0 +1,39 @@
+# audioWave — sobe a aplicação completa (frontend + API).
+#   docker compose up --build
+# Acesse: http://localhost:8080  (mude a porta com WEB_PORT=9000 docker compose up)
+
+services:
+  api:
+    build: ./api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0      # alcançável pelo nginx na rede interna do compose
+      PORT: 3001
+    volumes:
+      - audiowave-data:/app/data   # persiste projects.json entre reinícios
+    # porta 3001 NÃO publicada: a API fica privada, só o web a acessa
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --tries=1
+        - --spider
+        - http://127.0.0.1:3001/api/health
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"   # http://localhost:8080 (override: WEB_PORT)
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  audiowave-data:

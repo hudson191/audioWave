@@ -8,13 +8,14 @@ import { buildApp } from "./app.js";
 export { buildApp } from "./app.js";
 export type { BuildAppOptions } from "./app.js";
 
-export const PORT = 3001;
+export const PORT = Number(process.env.PORT) || 3001;
 /**
- * API sem autenticação: escuta APENAS em loopback. O frontend local acessa
- * via proxy do Vite (/api → 3001); expor em 0.0.0.0 abriria o CRUD de
- * projetos para qualquer máquina da rede (CORS não protege clients diretos).
+ * API sem autenticação: por padrão escuta APENAS em loopback (o frontend
+ * local acessa via proxy do Vite /api → 3001). Em container isolado, defina
+ * HOST=0.0.0.0 para que o serviço web (nginx) alcance a API pela rede interna
+ * do compose — SEM publicar a porta 3001 para o host (mantém-na privada).
  */
-export const HOST = "127.0.0.1";
+export const HOST = process.env.HOST ?? "127.0.0.1";
 
 async function start(): Promise<void> {
   const app = await buildApp({ logger: true });
