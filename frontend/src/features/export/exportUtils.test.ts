@@ -7,7 +7,39 @@ import {
   computeExportProgress,
   findResolution,
   pickSupportedMimeType,
+  waitForCanvasSize,
 } from "./exportUtils";
+
+describe("waitForCanvasSize", () => {
+  const makeCanvas = (width: number, height: number) =>
+    ({ width, height }) as HTMLCanvasElement;
+
+  it("resolve true imediatamente se o canvas já está no tamanho alvo", async () => {
+    const canvas = makeCanvas(1920, 1080);
+    await expect(waitForCanvasSize(canvas, 1920, 1080, 100)).resolves.toBe(
+      true,
+    );
+  });
+
+  it("resolve true quando o buffer atinge o alvo em alguns frames", async () => {
+    const canvas = makeCanvas(2108, 1314);
+    // simula o ResizeObserver do RenderEngine ajustando o buffer depois
+    setTimeout(() => {
+      canvas.width = 1920;
+      canvas.height = 1080;
+    }, 30);
+    await expect(waitForCanvasSize(canvas, 1920, 1080, 500)).resolves.toBe(
+      true,
+    );
+  });
+
+  it("resolve false no timeout se o buffer nunca chega ao alvo", async () => {
+    const canvas = makeCanvas(2108, 1314);
+    await expect(waitForCanvasSize(canvas, 1920, 1080, 80)).resolves.toBe(
+      false,
+    );
+  });
+});
 
 describe("findResolution", () => {
   it("encontra resoluções conhecidas", () => {

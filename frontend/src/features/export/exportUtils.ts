@@ -97,6 +97,42 @@ export function applyExportSize(
   };
 }
 
+/**
+ * Aguarda o buffer do canvas atingir o tamanho alvo (o ResizeObserver do
+ * RenderEngine aplica o novo tamanho de forma assíncrona). Resolve `true`
+ * quando o buffer bate com o alvo ou `false` no timeout — iniciar a gravação
+ * mesmo assim é preferível a falhar a exportação.
+ */
+export function waitForCanvasSize(
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number,
+  timeoutMs = 500,
+): Promise<boolean> {
+  if (canvas.width === width && canvas.height === height) {
+    return Promise.resolve(true);
+  }
+  return new Promise((resolve) => {
+    const startedAt = performance.now();
+    const check = (): void => {
+      if (canvas.width === width && canvas.height === height) {
+        resolve(true);
+        return;
+      }
+      if (performance.now() - startedAt >= timeoutMs) {
+        resolve(false);
+        return;
+      }
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(check);
+      } else {
+        setTimeout(check, 16);
+      }
+    };
+    check();
+  });
+}
+
 /** Dispara o download de um Blob com o nome informado. */
 export function downloadBlob(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);

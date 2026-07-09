@@ -17,6 +17,7 @@ import {
   downloadBlob,
   findResolution,
   pickSupportedMimeType,
+  waitForCanvasSize,
 } from "./exportUtils";
 import "./export.css";
 
@@ -151,7 +152,7 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     useAppStore.getState().setExportStatus("error");
   }
 
-  function startExport(): void {
+  async function startExport(): Promise<void> {
     const canvas = canvasRef.current;
     if (!canvas || duration <= 0) {
       toast.error(
@@ -183,6 +184,9 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
       resolution.height,
       window.devicePixelRatio,
     );
+    // o ResizeObserver do RenderEngine aplica o buffer novo de forma
+    // assíncrona — sem esperar, os primeiros frames sairiam no tamanho antigo
+    await waitForCanvasSize(canvas, resolution.width, resolution.height);
 
     let videoStream: MediaStream;
     let recorder: MediaRecorder;
@@ -265,7 +269,13 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
         ) : (
           <>
             <Button onClick={onClose}>Fechar</Button>
-            <Button variant="solid" onClick={startExport} disabled={duration <= 0}>
+            <Button
+              variant="solid"
+              onClick={() => {
+                void startExport();
+              }}
+              disabled={duration <= 0}
+            >
               Iniciar exportação
             </Button>
           </>

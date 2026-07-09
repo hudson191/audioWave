@@ -122,6 +122,54 @@ describe("BeatDetector", () => {
   });
 });
 
+/**
+ * Energia de graves REAL capturada no Chrome (AnalyserNode fftSize 2048,
+ * smoothing 0.8, bins 20-250Hz) tocando uma faixa 120bpm com kick + baixo
+ * contínuo. 90 amostras a ~30fps (~3s). Baseline elevado ~0.46-0.55 com
+ * picos de kick 0.83-0.87 a cada ~0.5s — o caso que threshold puramente
+ * multiplicativo (C×média) não detecta.
+ */
+const REAL_BASS_30FPS = [
+  0.3765, 0.862, 0.8, 0.7494, 0.6788, 0.6346, 0.5754, 0.6317, 0.5783, 0.534,
+  0.5023, 0.7273, 0.8453, 0.7893, 0.7266, 0.6656, 0.6064, 0.6068, 0.5515,
+  0.6153, 0.59, 0.5451, 0.5094, 0.4841, 0.4727, 0.4631, 0.8171, 0.8317,
+  0.7736, 0.7112, 0.651, 0.5929, 0.595, 0.5426, 0.5829, 0.543, 0.5087,
+  0.4845, 0.472, 0.6834, 0.8442, 0.7893, 0.7269, 0.666, 0.6078, 0.6053,
+  0.5526, 0.6207, 0.6007, 0.5522, 0.5141, 0.4888, 0.4709, 0.4645, 0.7123,
+  0.8542, 0.7979, 0.7355, 0.6738, 0.6143, 0.6011, 0.5476, 0.6299, 0.6061,
+  0.5586, 0.5194, 0.4923, 0.477, 0.4656, 0.8043, 0.8367, 0.7783, 0.7159,
+  0.6549, 0.5975, 0.5932, 0.5433, 0.6381, 0.5957, 0.5497, 0.513, 0.4866,
+  0.4717, 0.4642, 0.8171, 0.846, 0.7861, 0.7237, 0.6624, 0.6021,
+];
+
+describe("BeatDetector com baseline elevado (música real)", () => {
+  it("detecta beats e BPM ≈ 120 com baixo contínuo elevando a média", () => {
+    const detector = new BeatDetector();
+    const dt = 1 / 30;
+    const beatTimes: number[] = [];
+    let finalBpm: number | null = null;
+    REAL_BASS_30FPS.forEach((energy, i) => {
+      const result = detector.push(energy, i * dt);
+      finalBpm = result.bpm;
+      if (result.beat) {
+        beatTimes.push(i * dt);
+      }
+    });
+
+    // kicks a cada ~0.5s em ~3s → ao menos 4 detectáveis pós warm-up
+    expect(beatTimes.length).toBeGreaterThanOrEqual(4);
+    // intervalos múltiplos de ~0.5s (nenhum beat espúrio no meio)
+    for (let i = 1; i < beatTimes.length; i += 1) {
+      const interval = beatTimes[i]! - beatTimes[i - 1]!;
+      const nearestHalf = Math.round(interval / 0.5) * 0.5;
+      expect(Math.abs(interval - nearestHalf)).toBeLessThan(0.12);
+    }
+    expect(finalBpm).not.toBeNull();
+    expect(finalBpm!).toBeGreaterThanOrEqual(110);
+    expect(finalBpm!).toBeLessThanOrEqual(130);
+  });
+});
+
 describe("detectBeats", () => {
   it("processa séries de energia/tempo e marca beats nos pulsos", () => {
     const energies: number[] = [];

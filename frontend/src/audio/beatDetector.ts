@@ -1,8 +1,12 @@
 /**
  * Detector de beats PURO (sem Web Audio).
  *
- * Algoritmo: energia dos graves vs média móvel (~1s) com threshold adaptativo
- * baseado na variância (C ≈ 1.4), período refratário de 250ms.
+ * Algoritmo (sound-energy clássico): um frame é beat quando a energia dos
+ * graves excede `max(média×1.15, média + 1.5×desvio-padrão)` da janela móvel
+ * de ~1s, com período refratário de 250ms. O termo `média + K×desvio` detecta
+ * kicks mesmo com baseline elevado por baixo contínuo (threshold puramente
+ * multiplicativo falha nesse caso); o piso `média×1.15` impede beats em ruído
+ * quase constante (desvio → 0).
  * BPM: mediana dos intervalos entre beats recentes (janela 8s), estabiliza
  * após >= 4 beats, dobrado/dividido até cair na faixa 60–200.
  */
@@ -25,10 +29,10 @@ const MIN_BEATS_FOR_BPM = 4;
 const MIN_HISTORY_SAMPLES = 20;
 /** Energia mínima absoluta para um beat (evita beats em silêncio). */
 const MIN_BEAT_ENERGY = 0.08;
-/** C base do threshold adaptativo; reduzido pela variância, clampado ~1.4. */
-const BASE_THRESHOLD_C = 1.5;
-const VARIANCE_SLOPE = 2;
-const MIN_THRESHOLD_C = 1.25;
+/** Peso do desvio-padrão no threshold (média + K×desvio). */
+const STD_DEV_FACTOR = 1.5;
+/** Piso multiplicativo do threshold (evita beats em ruído quase constante). */
+const MIN_RATIO = 1.15;
 const BPM_MIN = 60;
 const BPM_MAX = 200;
 
@@ -130,12 +134,9 @@ export class BeatDetector {
     }
     const energies = recent.map((s) => s.energy);
     const avg = mean(energies);
-    const spread = variance(energies, avg);
-    const thresholdC = Math.min(
-      BASE_THRESHOLD_C,
-      Math.max(MIN_THRESHOLD_C, BASE_THRESHOLD_C - VARIANCE_SLOPE * spread),
-    );
-    return energy > thresholdC * avg;
+    const stdDev = Math.sqrt(variance(energies, avg));
+    const threshold = Math.max(avg * MIN_RATIO, avg + STD_DEV_FACTOR * stdDev);
+    return energy > threshold;
   }
 
   private computeBpm(): number | null {
