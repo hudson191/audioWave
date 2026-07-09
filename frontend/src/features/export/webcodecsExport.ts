@@ -23,6 +23,18 @@ const AUDIO_BITRATE = 192_000;
 const AUDIO_CHUNK_FRAMES = 4096;
 /** Limite da fila do encoder antes de aplicar backpressure. */
 const MAX_QUEUE = 12;
+/**
+ * Cede uma macrotask a cada N quadros. Sem isso, quando o encoder acompanha
+ * (fila baixa), o `await` no drain resolve só um microtask e a fila de
+ * macrotasks (UI, eventos, GC, callbacks do encoder) fica faminta — a aba
+ * congela e o export longo degrada. Ceder periodicamente mantém tudo fluido.
+ */
+const YIELD_EVERY_FRAMES = 12;
+
+/** Cede o controle ao event loop (macrotask). */
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
 
 export interface FastExportParams {
   audioBuffer: AudioBuffer;
@@ -215,6 +227,10 @@ export async function exportWithWebCodecs(
       videoFrame.close();
 
       await drainQueue(videoEncoder, signal);
+      // garante um respiro de macrotask mesmo quando a fila não enche
+      if (i % YIELD_EVERY_FRAMES === 0) {
+        await yieldToEventLoop();
+      }
       params.onProgress?.((i + 1) / total);
     }
 

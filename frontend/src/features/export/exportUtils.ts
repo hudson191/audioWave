@@ -196,5 +196,7 @@ export function downloadBlob(blob: Blob, fileName: string): void {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  // Revogar imediatamente cancela downloads grandes (o navegador ainda está
+  // lendo o blob). Adia a revogação para liberar a memória depois.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
