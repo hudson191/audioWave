@@ -23,6 +23,7 @@ import type {
 import type { RenderScene } from "./types";
 import { sceneRegistry } from "./sceneRegistry";
 import { clampSettings, DEFAULT_ELEMENT, DEFAULT_SETTINGS } from "./settings";
+import { drawImageCover, elementRect, imageSize } from "./compose";
 
 const MAX_DT = 0.1; // segundos
 const DEFAULT_DT = 1 / 60;
@@ -179,7 +180,8 @@ export class RenderEngine {
     ctx.fillStyle = this.palette.background;
     ctx.fillRect(0, 0, cssWidth, cssHeight);
     if (this.backgroundImage) {
-      drawImageCover(ctx, this.backgroundImage, cssWidth, cssHeight);
+      const { width, height } = imageSize(this.backgroundImage);
+      drawImageCover(ctx, this.backgroundImage, cssWidth, cssHeight, width, height);
     }
     const rect = this.elementRect();
     if (this.layerCanvas.width > 0 && this.layerCanvas.height > 0) {
@@ -189,13 +191,7 @@ export class RenderEngine {
 
   /** Caixa do elemento em CSS px, derivada de settings.element (%). */
   private elementRect(): { x: number; y: number; width: number; height: number } {
-    const element = this.settings.element ?? DEFAULT_ELEMENT;
-    return {
-      x: (element.x / 100) * this.cssWidth,
-      y: (element.y / 100) * this.cssHeight,
-      width: Math.max(1, (element.width / 100) * this.cssWidth),
-      height: Math.max(1, (element.height / 100) * this.cssHeight),
-    };
+    return elementRect(this.settings.element, this.cssWidth, this.cssHeight);
   }
 
   /** Agenda o próximo frame: rAF quando visível, setTimeout quando oculto. */
@@ -323,22 +319,6 @@ function createLayerCanvas(
   } catch {
     return null;
   }
-}
-
-/** Desenha a imagem cobrindo a área (equivalente a object-fit: cover). */
-function drawImageCover(
-  ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement,
-  width: number,
-  height: number,
-): void {
-  const iw = image.naturalWidth || image.width;
-  const ih = image.naturalHeight || image.height;
-  if (!iw || !ih || width <= 0 || height <= 0) return;
-  const scale = Math.max(width / iw, height / ih);
-  const dw = iw * scale;
-  const dh = ih * scale;
-  ctx.drawImage(image, (width - dw) / 2, (height - dh) / 2, dw, dh);
 }
 
 function sameElement(

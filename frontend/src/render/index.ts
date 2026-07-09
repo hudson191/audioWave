@@ -2,6 +2,8 @@
  * Barrel do motor de render (frontend/src/render).
  */
 export { RenderEngine } from "./renderEngine";
+export { OfflineRenderer } from "./offlineRenderer";
+export type { OfflineRendererOptions } from "./offlineRenderer";
 export { sceneRegistry, FALLBACK_SCENE_ID } from "./sceneRegistry";
 export {
   PALETTES,

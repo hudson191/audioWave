@@ -6,6 +6,11 @@ export type { FrequencyBands } from "./analysis";
 export { BeatDetector, detectBeats } from "./beatDetector";
 export type { BeatResult } from "./beatDetector";
 export {
+  createOfflineFrameSource,
+  extractMono,
+} from "./offlineAnalysis";
+export type { OfflineFrameSource } from "./offlineAnalysis";
+export {
   validateAudioFile,
   extractExtension,
   MAX_AUDIO_FILE_BYTES,

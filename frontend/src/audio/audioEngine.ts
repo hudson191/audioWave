@@ -177,6 +177,11 @@ export class AudioEngine {
     return this.status;
   }
 
+  /** AudioBuffer decodificado (para export offline). null se nada carregado. */
+  getAudioBuffer(): AudioBuffer | null {
+    return this.buffer;
+  }
+
   /** Registra listener de status; retorna função de unsubscribe. */
   onStatusChange(cb: (s: PlaybackStatus) => void): () => void {
     this.statusListeners.add(cb);

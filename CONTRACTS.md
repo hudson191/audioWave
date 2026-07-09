@@ -149,15 +149,19 @@ export class AudioEngine {
   getStatus(): PlaybackStatus;
   onStatusChange(cb: (s: PlaybackStatus) => void): () => void; // retorna unsubscribe
   onEnded(cb: () => void): () => void;
-  /** stream de áudio p/ export (MediaStreamAudioDestinationNode) */
+  /** stream de áudio p/ export em tempo real (MediaStreamAudioDestinationNode) */
   getMediaStream(): MediaStream;
+  /** AudioBuffer decodificado — usado pelo export offline (WebCodecs) */
+  getAudioBuffer(): AudioBuffer | null;
   dispose(): void;
 }
 export function detectBeats(/* pure helpers testáveis */)...
 ```
 
 Análise: AnalyserNode fftSize 2048, smoothingTimeConstant 0.8. Bandas: bass 20–250Hz, mid 250–4kHz, treble 4k–16kHz.
-Beat: energia dos graves vs média móvel (janela ~1s) com threshold adaptativo + refratário 250ms. Helpers puros em arquivos separados com testes.
+Beat: energia dos graves vs média móvel (janela ~1s), threshold `max(média×1.15, média + 1.5×desvio)` + refratário 250ms. Helpers puros em arquivos separados com testes.
+
+Análise OFFLINE (export rápido): `audio/fft.ts` (FFT radix-2 pura) + `audio/offlineAnalysis.ts` reproduzem o mesmo pipeline a partir do PCM (`createOfflineFrameSource(mono, sampleRate, fps)` → AudioFrame por quadro, em sequência), sem AnalyserNode.
 
 ## Motor de render (frontend/src/render/) — API pública
 

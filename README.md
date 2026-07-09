@@ -19,8 +19,14 @@ reativas ao som e exporte um vídeo `.webm` com áudio — tudo client-side.
   (layout idêntico no preview e no export) — render em camada offscreen
 - **Imagem central no osciloscópio**, recortada em círculo e pulsando com o beat
 - **Timeline**: blocos que definem qual cena aparece em cada trecho do vídeo
-- **Export de vídeo**: `canvas.captureStream(60)` + áudio pré-gain →
-  MediaRecorder (WebM VP9/Opus, 720p/1080p), com progresso e download automático
+- **Export de vídeo — dois modos:**
+  - **Rápido (padrão, WebCodecs):** render offline quadro a quadro com FFT sobre
+    o PCM + `VideoEncoder`/`AudioEncoder` → **MP4 (H.264/AAC)**. Não toca o
+    áudio, roda **bem acima de 1×** (ex.: 8s exportados em ~2,4s). Muxing com
+    `mp4-muxer`.
+  - **Fallback (sem WebCodecs):** `canvas.captureStream(60)` + `MediaRecorder`
+    → WebM (VP9/Opus), em tempo real.
+  - 720p/1080p, progresso e download automático.
 - **Projetos**: salvar/abrir/excluir via API REST; estado do editor persistido
   em localStorage (autosave com debounce)
 - **Dark/light mode** sem flash (tema aplicado antes do primeiro paint)

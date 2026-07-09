@@ -1,7 +1,11 @@
 /**
- * Diálogo de exportação: canvas.captureStream(60) + AudioEngine.getMediaStream()
- * → MediaRecorder (webm vp9 → vp8 → genérico). Toca o áudio do início e, ao
- * terminar, baixa audiowave-{nome}.webm automaticamente.
+ * Diálogo de exportação com dois caminhos:
+ *
+ * 1. RÁPIDO (padrão, quando o navegador tem WebCodecs): render offline
+ *    quadro a quadro + VideoEncoder/AudioEncoder → MP4 (H.264/AAC). Roda bem
+ *    acima de 1× (não toca o áudio), com progresso por quadros encodados.
+ * 2. FALLBACK (sem WebCodecs): canvas.captureStream(60) + MediaRecorder → WebM,
+ *    em tempo real (1×), tocando o áudio do início ao fim.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Dialog, Field, Progress, Select, useToast } from "../../ui";
@@ -16,13 +20,20 @@ import {
   computeExportProgress,
   downloadBlob,
   findResolution,
+  isFastExportSupported,
+  loadImage,
   pickSupportedMimeType,
   waitForCanvasSize,
 } from "./exportUtils";
+import { ExportCancelledError, exportWithWebCodecs } from "./webcodecsExport";
 import "./export.css";
 
 const UNSUPPORTED_MESSAGE =
-  "Seu navegador não suporta gravação de vídeo (MediaRecorder). Use uma versão recente do Chrome, Edge ou Firefox.";
+  "Seu navegador não suporta gravação de vídeo. Use uma versão recente do Chrome, Edge ou Firefox.";
+/** FPS do export rápido (offline). 30 é suave o bastante e mais leve. */
+const FAST_EXPORT_FPS = 30;
+
+type ExportMode = "fast" | "fallback";
 
 interface ActiveRecording {
   recorder: MediaRecorder;
@@ -45,25 +56,29 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
   const exportStatus = useAppStore((s) => s.exportStatus);
   const exportProgress = useAppStore((s) => s.exportProgress);
   const [resolutionId, setResolutionId] = useState(DEFAULT_RESOLUTION_ID);
+  const [mode, setMode] = useState<ExportMode | null>(null);
   const recordingRef = useRef<ActiveRecording | null>(null);
   const chunksRef = useRef<readonly Blob[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
 
+  const fastSupported = isFastExportSupported();
   const recording = exportStatus === "recording";
   const processing = exportStatus === "processing";
   const busy = recording || processing;
 
-  // progresso via currentTime (atualizado pelo loop do visualizador)
+  // Progresso do FALLBACK vem do currentTime (áudio tocando em tempo real).
+  // No modo rápido o progresso é setado direto pelo onProgress do encoder.
   useEffect(() => {
-    if (recording) {
+    if (recording && mode === "fallback") {
       useAppStore
         .getState()
         .setExportProgress(computeExportProgress(currentTime, duration));
     }
-  }, [recording, currentTime, duration]);
+  }, [recording, mode, currentTime, duration]);
 
   // ao reabrir o diálogo, limpa estado de exportações anteriores
   useEffect(() => {
-    if (open && !recordingRef.current) {
+    if (open && !recordingRef.current && !abortRef.current) {
       const store = useAppStore.getState();
       if (store.exportStatus === "done" || store.exportStatus === "error") {
         store.setExportStatus("idle");
@@ -72,12 +87,78 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     }
   }, [open]);
 
-  /**
-   * Encerra a gravação ativa: "done" baixa o vídeo, "cancel" descarta,
-   * "error" descarta e fixa exportStatus "error". O status final é decidido
-   * SOMENTE pelo finalize (que roda uma única vez, mesmo que o evento stop
-   * do recorder chegue depois de uma execução síncrona).
-   */
+  // ============================ MODO RÁPIDO (WebCodecs) ====================
+
+  const runFastExport = useCallback(
+    async (width: number, height: number): Promise<void> => {
+      const audio = getAudioEngine();
+      const buffer = audio.getAudioBuffer();
+      if (!buffer) {
+        toast.error(
+          "Exportação indisponível",
+          "Carregue um áudio antes de exportar o vídeo.",
+        );
+        return;
+      }
+      const store = useAppStore.getState();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setMode("fast");
+      store.setExportStatus("recording");
+      store.setExportProgress(0);
+
+      try {
+        const [backgroundImage, centerImage] = await Promise.all([
+          loadImage(store.backgroundImageUrl),
+          loadImage(store.centerImageUrl),
+        ]);
+        const blob = await exportWithWebCodecs({
+          audioBuffer: buffer,
+          width,
+          height,
+          fps: FAST_EXPORT_FPS,
+          sceneId: store.sceneId,
+          settings: store.settings,
+          timeline: store.timeline,
+          backgroundImage,
+          centerImage,
+          onProgress: (fraction) =>
+            useAppStore.getState().setExportProgress(fraction),
+          signal: controller.signal,
+        });
+        downloadBlob(
+          blob,
+          buildExportFileName(useAppStore.getState().audioFileName, "mp4"),
+        );
+        useAppStore.getState().setExportProgress(1);
+        useAppStore.getState().setExportStatus("done");
+        toast.success(
+          "Exportação concluída",
+          "O download do vídeo (MP4) foi iniciado.",
+        );
+      } catch (error: unknown) {
+        if (error instanceof ExportCancelledError) {
+          useAppStore.getState().setExportStatus("idle");
+          useAppStore.getState().setExportProgress(0);
+          toast.info("Exportação cancelada");
+        } else {
+          console.error("[export] falha no modo rápido:", error);
+          useAppStore.getState().setExportStatus("error");
+          toast.error(
+            "Falha na exportação",
+            getErrorMessage(error, "Não foi possível gerar o vídeo."),
+          );
+        }
+      } finally {
+        abortRef.current = null;
+        setMode(null);
+      }
+    },
+    [getAudioEngine, toast],
+  );
+
+  // ============================ FALLBACK (MediaRecorder) ==================
+
   const finishRecording = useCallback(
     (outcome: "done" | "cancel" | "error"): void => {
       const active = recordingRef.current;
@@ -105,7 +186,7 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
           chunksRef.current = [];
           downloadBlob(
             blob,
-            buildExportFileName(useAppStore.getState().audioFileName),
+            buildExportFileName(useAppStore.getState().audioFileName, "webm"),
           );
           useAppStore.getState().setExportProgress(1);
           useAppStore.getState().setExportStatus("done");
@@ -120,6 +201,7 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
             .getState()
             .setExportStatus(outcome === "error" ? "error" : "idle");
         }
+        setMode(null);
       };
 
       if (outcome === "done") {
@@ -140,10 +222,11 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     [getAudioEngine, toast],
   );
 
-  // cancelamento seguro se o componente desmontar durante uma gravação
+  // cancelamento seguro se o componente desmontar durante uma exportação
   useEffect(() => {
     return () => {
       finishRecording("cancel");
+      abortRef.current?.abort();
     };
   }, [finishRecording]);
 
@@ -152,7 +235,10 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     useAppStore.getState().setExportStatus("error");
   }
 
-  async function startExport(): Promise<void> {
+  async function startFallbackExport(
+    width: number,
+    height: number,
+  ): Promise<void> {
     const canvas = canvasRef.current;
     if (!canvas || duration <= 0) {
       toast.error(
@@ -176,17 +262,14 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
       return;
     }
 
-    const resolution = findResolution(resolutionId);
     const audio = getAudioEngine();
     const restoreSize = applyExportSize(
       canvas,
-      resolution.width,
-      resolution.height,
+      width,
+      height,
       window.devicePixelRatio,
     );
-    // o ResizeObserver do RenderEngine aplica o buffer novo de forma
-    // assíncrona — sem esperar, os primeiros frames sairiam no tamanho antigo
-    await waitForCanvasSize(canvas, resolution.width, resolution.height);
+    await waitForCanvasSize(canvas, width, height);
 
     let videoStream: MediaStream;
     let recorder: MediaRecorder;
@@ -217,12 +300,10 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     };
     recorder.onerror = (event: Event) => {
       console.error("[export] erro do MediaRecorder:", event);
-      // o finalize de finishRecording fixa exportStatus "error" uma única vez
       finishRecording("error");
       toast.error("Erro durante a gravação", "A exportação foi interrompida.");
     };
 
-    // só as tracks de vídeo são nossas; as de áudio pertencem ao engine
     const stopTracks = (): void => {
       videoStream.getTracks().forEach((track) => track.stop());
     };
@@ -235,6 +316,7 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
       offEnded,
     };
 
+    setMode("fallback");
     recorder.start(1000);
     audio.seek(0);
     audio.play();
@@ -242,7 +324,22 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     useAppStore.getState().setExportStatus("recording");
   }
 
+  // ============================ orquestração comum ========================
+
+  function startExport(): void {
+    const resolution = findResolution(resolutionId);
+    if (fastSupported) {
+      void runFastExport(resolution.width, resolution.height);
+    } else {
+      void startFallbackExport(resolution.width, resolution.height);
+    }
+  }
+
   function cancelExport(): void {
+    if (mode === "fast") {
+      abortRef.current?.abort();
+      return;
+    }
     finishRecording("cancel");
     toast.info("Exportação cancelada");
   }
@@ -256,6 +353,13 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     }
   }
 
+  const progressText =
+    mode === "fallback"
+      ? "Gravando… a música está sendo reproduzida em tempo real."
+      : processing
+        ? "Processando o vídeo…"
+        : "Gerando o vídeo… (modo rápido, sem tocar o áudio)";
+
   return (
     <Dialog
       open={open}
@@ -264,16 +368,14 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
       footer={
         busy ? (
           <Button onClick={cancelExport} disabled={processing}>
-            Cancelar gravação
+            Cancelar
           </Button>
         ) : (
           <>
             <Button onClick={onClose}>Fechar</Button>
             <Button
               variant="solid"
-              onClick={() => {
-                void startExport();
-              }}
+              onClick={startExport}
               disabled={duration <= 0}
             >
               Iniciar exportação
@@ -284,11 +386,7 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     >
       {busy ? (
         <div className="export-progress">
-          <p>
-            {processing
-              ? "Processando o vídeo…"
-              : "Gravando… a música está sendo reproduzida em tempo real."}
-          </p>
+          <p>{progressText}</p>
           <Progress
             value={processing ? 1 : exportProgress}
             tone="primary"
@@ -312,8 +410,9 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
             </Select>
           </Field>
           <p className="hint">
-            A música toca do início ao fim durante a gravação e o vídeo (.webm)
-            é baixado automaticamente ao final.
+            {fastSupported
+              ? "Modo rápido: o vídeo (.mp4) é gerado bem mais rápido que a duração da música e baixado automaticamente ao final."
+              : "A música toca do início ao fim durante a gravação e o vídeo (.webm) é baixado automaticamente ao final."}
           </p>
           {exportStatus === "done" ? (
             <p className="export-status export-status--done">

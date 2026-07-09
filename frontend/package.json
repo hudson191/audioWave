@@ -14,6 +14,7 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "mp4-muxer": "^5.2.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zustand": "^5.0.14"

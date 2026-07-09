@@ -5,7 +5,10 @@ import {
   applyExportSize,
   buildExportFileName,
   computeExportProgress,
+  computeVideoBitrate,
   findResolution,
+  frameTimestampMicros,
+  isFastExportSupported,
   pickSupportedMimeType,
   waitForCanvasSize,
 } from "./exportUtils";
@@ -95,6 +98,52 @@ describe("buildExportFileName", () => {
   it("faz fallback para 'video'", () => {
     expect(buildExportFileName(null)).toBe("audiowave-video.webm");
     expect(buildExportFileName("???.ogg")).toBe("audiowave-video.webm");
+  });
+});
+
+describe("buildExportFileName com extensão", () => {
+  it("usa a extensão informada", () => {
+    expect(buildExportFileName("Minha Música.wav", "mp4")).toBe(
+      "audiowave-minha-música.mp4",
+    );
+    expect(buildExportFileName(null, "mp4")).toBe("audiowave-video.mp4");
+  });
+});
+
+describe("computeVideoBitrate", () => {
+  it("clampa em 2–20 Mbps", () => {
+    expect(computeVideoBitrate(320, 180, 30)).toBe(2_000_000); // pequeno → piso
+    expect(computeVideoBitrate(3840, 2160, 60)).toBe(20_000_000); // 4k60 → teto
+  });
+  it("escala com resolução/fps dentro da faixa", () => {
+    const b = computeVideoBitrate(1920, 1080, 30);
+    expect(b).toBeGreaterThan(2_000_000);
+    expect(b).toBeLessThanOrEqual(20_000_000);
+  });
+});
+
+describe("frameTimestampMicros", () => {
+  it("converte índice de quadro em microssegundos", () => {
+    expect(frameTimestampMicros(0, 30)).toBe(0);
+    expect(frameTimestampMicros(30, 30)).toBe(1_000_000);
+    expect(frameTimestampMicros(15, 30)).toBe(500_000);
+  });
+});
+
+describe("isFastExportSupported", () => {
+  const full = {
+    VideoEncoder: class {},
+    AudioEncoder: class {},
+    VideoFrame: class {},
+    AudioData: class {},
+  };
+  it("true quando toda a pilha WebCodecs existe", () => {
+    expect(isFastExportSupported(full)).toBe(true);
+  });
+  it("false se faltar qualquer peça", () => {
+    expect(isFastExportSupported({})).toBe(false);
+    const { AudioData: _omit, ...partial } = full;
+    expect(isFastExportSupported(partial)).toBe(false);
   });
 });
 

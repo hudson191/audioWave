@@ -47,15 +47,69 @@ export function pickSupportedMimeType(
 
 const FALLBACK_BASE_NAME = "video";
 
-/** Monta "audiowave-{nome}.webm" a partir do nome do áudio (sanitizado). */
-export function buildExportFileName(baseName: string | null): string {
+/** Monta "audiowave-{nome}.{ext}" a partir do nome do áudio (sanitizado). */
+export function buildExportFileName(
+  baseName: string | null,
+  extension = "webm",
+): string {
   const withoutExtension = (baseName ?? "").replace(/\.[^.]+$/, "").trim();
   const safe = withoutExtension
     .replace(/[^\p{L}\p{N}\-_ ]/gu, "")
     .trim()
     .replace(/\s+/g, "-")
     .toLowerCase();
-  return `audiowave-${safe || FALLBACK_BASE_NAME}.webm`;
+  return `audiowave-${safe || FALLBACK_BASE_NAME}.${extension}`;
+}
+
+/**
+ * Bitrate de vídeo (bits/s) por resolução/fps — heurística ~0.1 bit/pixel/frame,
+ * clampada em 2–20 Mbps para qualidade boa sem arquivos gigantes.
+ */
+export function computeVideoBitrate(
+  width: number,
+  height: number,
+  fps: number,
+): number {
+  const raw = width * height * fps * 0.1;
+  return Math.round(Math.min(Math.max(raw, 2_000_000), 20_000_000));
+}
+
+/** Timestamp de um quadro em microssegundos (unidade do WebCodecs). */
+export function frameTimestampMicros(frameIndex: number, fps: number): number {
+  return Math.round((frameIndex * 1_000_000) / fps);
+}
+
+/** Carrega uma imagem de um URL; resolve null se falhar ou url vazio. */
+export function loadImage(
+  url: string | null,
+): Promise<HTMLImageElement | null> {
+  if (!url) {
+    return Promise.resolve(null);
+  }
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = url;
+  });
+}
+
+/**
+ * True se o navegador tem a pilha WebCodecs necessária para o export rápido.
+ * `globals` é injetável para teste.
+ */
+export function isFastExportSupported(
+  globals: Record<string, unknown> = globalThis as unknown as Record<
+    string,
+    unknown
+  >,
+): boolean {
+  return (
+    typeof globals.VideoEncoder !== "undefined" &&
+    typeof globals.AudioEncoder !== "undefined" &&
+    typeof globals.VideoFrame !== "undefined" &&
+    typeof globals.AudioData !== "undefined"
+  );
 }
 
 /** Progresso 0-1 da gravação a partir de tempo corrente/duração. */
