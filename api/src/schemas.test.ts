@@ -227,8 +227,18 @@ describe("customColors (settings)", () => {
     expect(r.success).toBe(true);
   });
 
+  it("aceita cores com canal alfa (#RGBA e #RRGGBBAA)", () => {
+    const r = projectInputSchema.safeParse(withColors(["#fff0", "#286CF000"]));
+    expect(r.success).toBe(true);
+  });
+
   it("rejeita cor não-hex", () => {
     expect(projectInputSchema.safeParse(withColors(["azul"])).success).toBe(false);
+  });
+
+  it("rejeita hex com comprimento inválido", () => {
+    expect(projectInputSchema.safeParse(withColors(["#12345"])).success).toBe(false);
+    expect(projectInputSchema.safeParse(withColors(["#1234567"])).success).toBe(false);
   });
 
   it("rejeita mais de 6 cores", () => {

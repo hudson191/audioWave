@@ -2,6 +2,7 @@
  * Defaults e validação de SceneSettings (boundary do motor de render).
  */
 import type { ElementBox, SceneSettings } from "../shared/types";
+import { HEX_COLOR_RE } from "./color";
 import { clamp } from "./math";
 
 export const SENSITIVITY_MIN = 0.1;
@@ -17,8 +18,8 @@ export const ELEMENT_SIZE_MAX = 100;
 
 /** Máximo de cores na paleta customizada. */
 export const MAX_CUSTOM_COLORS = 6;
-/** Cor hex válida: #RGB ou #RRGGBB. */
-export const HEX_COLOR_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+export { HEX_COLOR_RE };
 
 /** Filtra cores hex válidas e limita a quantidade. Retorna NOVO array. */
 export function sanitizeCustomColors(

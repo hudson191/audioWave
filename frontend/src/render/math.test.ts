@@ -133,6 +133,15 @@ describe("hexToRgba", () => {
   it("clampa alpha", () => {
     expect(hexToRgba("#000000", 5)).toBe("rgba(0, 0, 0, 1)");
   });
+
+  it("cor transparente permanece invisível, sem virar branco", () => {
+    expect(hexToRgba("#286CF000", 0.9)).toBe("rgba(40, 108, 240, 0)");
+  });
+
+  it("combina o alfa do hex com o alfa pedido", () => {
+    expect(hexToRgba("#286CF080", 0.5)).toBe("rgba(40, 108, 240, 0.251)");
+    expect(hexToRgba("#286CF0FF", 0.5)).toBe("rgba(40, 108, 240, 0.5)");
+  });
 });
 
 describe("partículas", () => {

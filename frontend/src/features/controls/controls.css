@@ -73,6 +73,27 @@
   border: 1px solid var(--color-border);
 }
 
+/*
+ * Xadrez que representa "sem cor": uma cor transparente pintada como
+ * background ficaria invisível e indistinguível do card.
+ */
+.palette-card__swatch--transparent,
+.custom-colors__item--transparent {
+  background-color: var(--color-surface);
+  background-image:
+    linear-gradient(45deg, var(--color-border) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--color-border) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--color-border) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--color-border) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+}
+
+.palette-card__swatch--transparent {
+  background-size: 6px 6px;
+  background-position: 0 0, 0 3px, 3px -3px, -3px 0;
+}
+
 .palette-card__name {
   font-size: 13px;
   font-weight: var(--fw-medium);
@@ -223,6 +244,7 @@
   position: relative;
   width: 40px;
   height: 40px;
+  border-radius: var(--radius-md);
 }
 
 .custom-colors__picker {
@@ -233,6 +255,40 @@
   border-radius: var(--radius-md);
   background: none;
   cursor: pointer;
+}
+
+/* Cor transparente: o matiz segue editável, mas apagado sobre o xadrez. */
+.custom-colors__item--transparent .custom-colors__picker {
+  opacity: 0.3;
+}
+
+.custom-colors__alpha {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background-color: var(--color-surface);
+  background-image:
+    linear-gradient(45deg, var(--color-text-muted) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--color-text-muted) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--color-text-muted) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--color-text-muted) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+  cursor: pointer;
+}
+
+.custom-colors__alpha:hover {
+  border-color: var(--color-text-muted);
+}
+
+.custom-colors__alpha[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
 }
 
 .custom-colors__remove {
