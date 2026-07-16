@@ -101,6 +101,12 @@ describe("sanitizeCustomColors / clampSettings custom", () => {
     ).toEqual(["#fff", "#286CF0", "#abcdef"]);
   });
 
+  it("mantém cores transparentes (#RRGGBBAA)", () => {
+    expect(
+      sanitizeCustomColors(["#286CF000", "#fff0", "#286CF0"]),
+    ).toEqual(["#286CF000", "#fff0", "#286CF0"]);
+  });
+
   it("limita a 6 cores", () => {
     const many = Array.from({ length: 10 }, () => "#000000");
     expect(sanitizeCustomColors(many)).toHaveLength(6);

@@ -32,4 +32,12 @@ export {
   MAX_CUSTOM_COLORS,
   HEX_COLOR_RE,
 } from "./settings";
+export {
+  TRANSPARENT_COLOR,
+  isTransparent,
+  parseHex,
+  toOpaqueHex,
+  withTransparency,
+} from "./color";
+export type { Rgba } from "./color";
 export type { RenderScene } from "./types";

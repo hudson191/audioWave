@@ -37,7 +37,8 @@ export const elementBoxSchema = z.object({
 
 /** Máximo de cores na paleta customizada. */
 export const MAX_CUSTOM_COLORS = 6;
-const HEX_COLOR_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+/** Cor hex, com canal alfa opcional (alfa zero = cor transparente). */
+const HEX_COLOR_RE = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
 export const sceneSettingsSchema = z.object({
   sensitivity: z
@@ -57,7 +58,10 @@ export const sceneSettingsSchema = z.object({
     .array(
       z
         .string("customColors deve conter cores em texto")
-        .regex(HEX_COLOR_RE, "cor deve ser hex (#RGB ou #RRGGBB)"),
+        .regex(
+          HEX_COLOR_RE,
+          "cor deve ser hex (#RGB, #RGBA, #RRGGBB ou #RRGGBBAA)",
+        ),
     )
     .max(MAX_CUSTOM_COLORS, `customColors deve ter no máximo ${MAX_CUSTOM_COLORS} cores`)
     .optional(),

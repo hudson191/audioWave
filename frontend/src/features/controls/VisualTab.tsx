@@ -19,7 +19,10 @@ import {
   PALETTES,
   SENSITIVITY_MAX,
   SENSITIVITY_MIN,
+  isTransparent,
   sceneRegistry,
+  toOpaqueHex,
+  withTransparency,
 } from "../../render";
 import { useAppStore } from "../../state";
 import { ImagePicker } from "./ImagePicker";
@@ -67,6 +70,12 @@ export function VisualTab() {
     const next = [...customColors];
     next[index] = color;
     setSettings({ paletteId: CUSTOM_PALETTE_ID, customColors: next });
+  };
+
+  /** Alterna o alfa da cor entre 0 e opaco, preservando o matiz escolhido. */
+  const toggleTransparentAt = (index: number): void => {
+    const current = customColors[index] ?? "#FFFFFF";
+    setCustomColorAt(index, withTransparency(current, !isTransparent(current)));
   };
 
   const addCustomColor = (): void => {
@@ -147,8 +156,11 @@ export function VisualTab() {
             {(isCustom ? customColors : CUSTOM_CARD_SWATCHES).map((color, i) => (
               <span
                 key={`${color}-${i}`}
-                className="palette-card__swatch"
-                style={{ background: color }}
+                className={cx(
+                  "palette-card__swatch",
+                  isTransparent(color) && "palette-card__swatch--transparent",
+                )}
+                style={isTransparent(color) ? undefined : { background: color }}
               />
             ))}
           </span>
@@ -159,27 +171,49 @@ export function VisualTab() {
       {isCustom ? (
         <div className="custom-colors">
           <div className="custom-colors__list">
-            {customColors.map((color, i) => (
-              <div className="custom-colors__item" key={i}>
-                <input
-                  type="color"
-                  className="custom-colors__picker"
-                  value={color}
-                  aria-label={`Cor ${i + 1} da paleta customizada`}
-                  onChange={(e) => setCustomColorAt(i, e.target.value)}
-                />
-                {customColors.length > 1 ? (
+            {customColors.map((color, i) => {
+              const transparent = isTransparent(color);
+              return (
+                <div
+                  className={cx(
+                    "custom-colors__item",
+                    transparent && "custom-colors__item--transparent",
+                  )}
+                  key={i}
+                >
+                  <input
+                    type="color"
+                    className="custom-colors__picker"
+                    value={toOpaqueHex(color)}
+                    aria-label={`Cor ${i + 1} da paleta customizada`}
+                    onChange={(e) =>
+                      setCustomColorAt(
+                        i,
+                        withTransparency(e.target.value, transparent),
+                      )
+                    }
+                  />
                   <button
                     type="button"
-                    className="custom-colors__remove"
-                    aria-label={`Remover cor ${i + 1}`}
-                    onClick={() => removeCustomColor(i)}
-                  >
-                    ×
-                  </button>
-                ) : null}
-              </div>
-            ))}
+                    className="custom-colors__alpha"
+                    aria-pressed={transparent}
+                    aria-label={`Cor ${i + 1} transparente`}
+                    title={transparent ? "Tornar opaca" : "Tornar transparente"}
+                    onClick={() => toggleTransparentAt(i)}
+                  />
+                  {customColors.length > 1 ? (
+                    <button
+                      type="button"
+                      className="custom-colors__remove"
+                      aria-label={`Remover cor ${i + 1}`}
+                      onClick={() => removeCustomColor(i)}
+                    >
+                      ×
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
             {customColors.length < MAX_CUSTOM_COLORS ? (
               <button
                 type="button"

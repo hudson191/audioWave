@@ -2,6 +2,7 @@
  * Matemática pura do motor de render — sem dependências de DOM.
  * Todas as funções são puras e retornam novos valores/objetos (imutável).
  */
+import { parseHex } from "./color";
 
 /** Restringe `value` ao intervalo [min, max]. NaN vira `min`. */
 export function clamp(value: number, min: number, max: number): number {
@@ -77,16 +78,22 @@ export function decayPeaks(
   );
 }
 
-/** Converte hex `#RRGGBB` em string `rgba(...)`. Hex inválido → branco. */
+/** Casas decimais do alfa emitido (evita ruído de ponto flutuante). */
+const ALPHA_PRECISION = 1000;
+
+const roundAlpha = (a: number): number =>
+  Math.round(a * ALPHA_PRECISION) / ALPHA_PRECISION;
+
+/**
+ * Converte hex em string `rgba(...)`, multiplicando o alfa do próprio hex
+ * (`#RRGGBBAA`) pelo `alpha` pedido — assim uma cor transparente da paleta
+ * continua invisível por mais opaco que o desenho peça. Inválido → branco.
+ */
 export function hexToRgba(hex: string, alpha: number): string {
   const a = clamp(alpha, 0, 1);
-  const match = /^#?([0-9a-fA-F]{6})$/.exec(hex);
-  if (!match) return `rgba(255, 255, 255, ${a})`;
-  const value = Number.parseInt(match[1], 16);
-  const r = (value >> 16) & 0xff;
-  const g = (value >> 8) & 0xff;
-  const b = value & 0xff;
-  return `rgba(${r}, ${g}, ${b}, ${a})`;
+  const rgba = parseHex(hex);
+  if (!rgba) return `rgba(255, 255, 255, ${roundAlpha(a)})`;
+  return `rgba(${rgba.r}, ${rgba.g}, ${rgba.b}, ${roundAlpha(rgba.a * a)})`;
 }
 
 /** Partícula imutável do sistema de partículas. */
